@@ -3,6 +3,7 @@ dateutils
 cn2an
 torch
 joblib
+Cython
 opencc
 emoji
 hnswlib
@@ -13,7 +14,6 @@ lac
 pandas
 sklearn
 gensim==3.8.1
-Cython
 cyac
 beautifulsoup4
 nebula2-python==2.5.0
@@ -23,3 +23,4 @@ pycedar
 pycorrector
 kenlm
 lmdb-embeddings
+pymongo
