@@ -15,10 +15,10 @@ workers = cfg.WEB.WORKER
 threads = cfg.WEB.THREADS
 
 # 监听端口
-bind = f'{cfg.WEB.HOST}:{cfg.WEB.HOST}'
+bind = f'{cfg.WEB.HOST}:{cfg.WEB.PORT}'
 
 # 是否设为守护进程
-daemon = cfg.WEB.DAEMON
+daemon = 'true'
 
 # 工作模式：协程
 # 默认为sync异步，类型：sync, eventlet, gevent, tornado, gthread, gaiohttp

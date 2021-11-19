@@ -14,4 +14,4 @@ clean:
 	rm -rf __pycache__
 
 run:
-	gunicorn -c gunicorn.py manage:app
+	gunicorn -c conf.py app:app
