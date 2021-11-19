@@ -8,7 +8,7 @@ from core.intent import Fasttest
 from core.knowledge import EntityLink
 
 logger = setup_logger()
-cfg = get_cfg
+cfg = get_cfg()
 
 intent = Fasttest(cfg, 'two_intent')
 searchObj = Search(cfg)
@@ -19,22 +19,25 @@ app = Flask(__name__)
 
 @app.route('/intent', methods=["POST"])
 def index():
-    query = request.json
+    data = request.json
+    query = data['query']
     query = query if isinstance(query, list) else [query]
     prediction, proba = intent.predict(query)
     return jsonify({"label": prediction, 'score': proba})
 
 
 @app.route('/retrieval', methods=["POST"])
-def index():
-    query = request.json
+def retrieval():
+    data = request.json
+    query = data['query']
     result = searchObj.search(query)
     return jsonify({"result": result})
 
 
 @app.route('/entity_link', methods=["POST"])
-def index():
-    query = request.json
+def entity():
+    data = request.json
+    query = data['query']
     entity = el.entity_link(query)
     return jsonify({"entity": entity})
 

@@ -26,6 +26,7 @@ _C.BASE.DOG_DATA = os.path.join(ROOT, 'data/knowledge_graph/chien_name.csv')
 _C.BASE.DISEASE_DATA = os.path.join(ROOT, 'data/knowledge_graph/disease.txt')
 _C.BASE.SYMPTOM_DATA = os.path.join(ROOT, 'data/knowledge_graph/symptom.csv')
 
+_C.BASE.FROM_FILE = True
 _C.BASE.DATA_PATH = os.path.join(ROOT, 'data/')
 _C.BASE.CHAR_FILE = os.path.join(ROOT, 'data/segmentation/all_char.txt')
 _C.BASE.FINE_WORD_FILE = os.path.join(ROOT,
@@ -46,7 +47,15 @@ _C.BASE.KEY_LD_INDEX = 'LD'
 
 _C.WEB = CN()
 _C.WEB.PORT = 6400
-
+_C.WEB.HOST = '172.28.29.249'
+_C.WEB.THREADS = 2
+_C.WEB.WORKER = 1
+_C.WEB.DAEMON = 'true'
+_C.WEB.WORK_CLASS = 'gevent'  # [sync, eventlet, gevent, tornado, gthread, gaiohttp]
+_C.WEB.LOG = os.path.join(ROOT, 'logs/info.log')
+_C.WEB.ERROR_LOG = os.path.join(ROOT, 'logs/error.log')
+_C.WEB.PID_FILE = os.path.join(ROOT, 'gunicorn/gunicorn.pid')
+_C.WEB.LOG_LEVEL = 'info'
 
 _C.MONGO = CN()
 _C.MONGO.HOST = '172.28.29.249'
@@ -60,6 +69,7 @@ _C.ES.PORT = 9200
 _C.ES.USER = 'qa'
 _C.ES.PWD = 'ABCabc123'
 
+#################### deprecated ################
 _C.NEBULA = CN()
 _C.NEBULA.HOST = '172.28.29.249'
 _C.NEBULA.PORT = 9669
@@ -75,7 +85,6 @@ _C.DICTIONARY.SPECIALIZE_PATH = os.path.join(ROOT,
 _C.DICTIONARY.STOP_WORDS = os.path.join(ROOT, 'data/dictionary/stop_words.txt')
 _C.DICTIONARY.CUSTOM_WORDS = os.path.join(
     ROOT, 'data/dictionary/segmentation/custom.txt')
-
 _C.DICTIONARY.SAME_PINYIN_PATH = os.path.join(
     ROOT, 'data/correction/same_pinyin.txt')
 _C.DICTIONARY.SAME_STROKE_PATH = os.path.join(

@@ -107,3 +107,4 @@ class ES:
         for idx, row in tqdm(data.iterrows(), total=data.shape[0]):
             tmp = row.to_dict()
             self.es.index(index, tmp)
+        self.es.indices.refresh(index=index)

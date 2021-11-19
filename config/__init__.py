@@ -4,6 +4,8 @@ import os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 directories = [
+    'logs',
+    'gunicorn',
     'data',
     'models',
     'data/knowledge_graph',

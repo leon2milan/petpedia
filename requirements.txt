@@ -24,3 +24,6 @@ pycorrector
 kenlm
 lmdb-embeddings
 pymongo
+gunicorn
+flask
+gevent

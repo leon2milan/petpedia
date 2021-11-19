@@ -38,8 +38,6 @@ class Fasttest(object):
             df['source'] = i_file.split('.')[0]
             data.append(df.sample(frac=0.01))
         data = pd.concat(data).reset_index(drop=True)
-        positive = pd.DataFrame(
-            list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {}))).dropna()
 
         negtive = pd.DataFrame(data.dropna()['query'].tolist() +
                                data.dropna()['answer'].tolist(),
@@ -50,7 +48,7 @@ class Fasttest(object):
         negtive['len'] = negtive['content'].apply(len)
         negtive = negtive[negtive['len'] > 1]
         negtive['content'] = negtive['content'].apply(
-            lambda x: " ".join(x) + "\t" + "__lable__" + str(0))
+            lambda x: "".join(x) + "\t" + "__lable__" + str(0))
 
         positive = pd.DataFrame(
             list(self.mongo.find(self.cfg.BASE.QA_COLLECTION,
