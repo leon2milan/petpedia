@@ -122,3 +122,4 @@ data/
 train_test_split/
 *.ipynb
 .gitee/
+.vscode/

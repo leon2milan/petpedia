@@ -6,6 +6,7 @@ from config import get_cfg
 from core.tools import flatten
 from core.tools.es import ES
 from tqdm import tqdm
+
 tqdm.pandas(desc="Data Process")
 
 cfg = get_cfg()
@@ -17,8 +18,8 @@ qa = pd.read_csv(cfg.BASE.QA_DATA)[['question', 'answer']].fillna('')
 qa = qa[qa['answer'] != ''].reset_index(drop=True)
 
 qa['unrelevent'] = False
-qa.iloc[20511: 34295]['unrelevent'] = True
-qa.iloc[44770: 67108]['unrelevent'] = True
+qa.iloc[20511:34295]['unrelevent'] = True
+qa.iloc[44770:67108]['unrelevent'] = True
 qa = qa[~qa['unrelevent']].reset_index()[['question', 'answer']]
 
 qa['question_fine_cut'] = qa['question'].progress_apply(
@@ -50,7 +51,9 @@ with open(cfg.BASE.CHAR_FILE, 'w') as f:
             f.write(" ".join(x))
             f.write('\n')
 
-data =  qa['question_fine_cut'].values.tolist() + [y for x in qa['answer_fine_cut'].values.tolist() for y in x if y]
+data = qa['question_fine_cut'].values.tolist() + [
+    y for x in qa['answer_fine_cut'].values.tolist() for y in x if y
+]
 data = list(set([" ".join(x) for x in data if x]))
 with open(cfg.BASE.FINE_WORD_FILE, 'w') as f:
     for x in tqdm(data):
@@ -58,8 +61,9 @@ with open(cfg.BASE.FINE_WORD_FILE, 'w') as f:
             f.write(x)
             f.write('\n')
 
-
-data =  qa['question_rough_cut'].values.tolist() + [y for x in qa['answer_rough_cut'].values.tolist() for y in x if y]
+data = qa['question_rough_cut'].values.tolist() + [
+    y for x in qa['answer_rough_cut'].values.tolist() for y in x if y
+]
 data = list(set([" ".join(x) for x in data if x]))
 with open(cfg.BASE.ROUGH_WORD_FILE, 'w') as f:
     for x in tqdm(data):
