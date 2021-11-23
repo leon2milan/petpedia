@@ -18,9 +18,13 @@ _C.BASE.PAD_TOKEN = "<PAD>"
 
 _C.BASE.QA_COLLECTION = 'qa'
 _C.BASE.KNOWLEDGE_COLLECTION = 'DOG'
+_C.BASE.SQL_COLLECTION = 'Neo4jQueryStatement'
+_C.BASE.SPECIALIZE_COLLECTION = 'AliasMapTABLE'
 
 _C.BASE.MODEL_PATH = os.path.join(ROOT, 'models')
 _C.BASE.QA_DATA = os.path.join(ROOT, 'data/knowledge_graph/all_qa.csv')
+
+######### deprecated #########
 _C.BASE.CAT_DATA = os.path.join(ROOT, 'data/knowledge_graph/chat_name.csv')
 _C.BASE.DOG_DATA = os.path.join(ROOT, 'data/knowledge_graph/chien_name.csv')
 _C.BASE.DISEASE_DATA = os.path.join(ROOT, 'data/knowledge_graph/disease.txt')

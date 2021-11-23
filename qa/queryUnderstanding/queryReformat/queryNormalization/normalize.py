@@ -40,10 +40,10 @@ class Normalization():
         return self.__name2class.get(x, "")
 
     def get_synonym_dict(self):
-        self.__disease = list(self.__specialize['疾病'].keys())
-        self.__symptom = list(self.__specialize['症状'].keys())
-        self.__dog = list(self.__specialize['犬'].keys())
-        self.__cat = list(self.__specialize['猫'].keys())
+        self.__disease = list(self.__specialize['DISEASE'].keys())
+        self.__symptom = list(self.__specialize['SYMPTOMS'].keys())
+        self.__dog = list(self.__specialize['DOG'].keys())
+        self.__cat = list(self.__specialize['CAT'].keys())
         self.__name2class = {n: c for c, b in self.__specialize.items() for n, _ in b.items()}
         self.__name2alias = reduce(lambda a, b: dict(a, **b), self.__specialize.values())
         self.__alias2name = {j if j else k: k for k, v in self.__name2alias.items() for j in v}

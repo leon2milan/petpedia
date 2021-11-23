@@ -17,6 +17,7 @@ from functools import reduce
 
 logger = setup_logger()
 
+
 @Singleton
 class Words():
     """
@@ -102,29 +103,33 @@ class Words():
         }
 
     def get_specialize_words(self):
-        cat = pd.read_csv(
-            self.cfg.BASE.CAT_DATA)[['chinese_name',
-                                     'chinese_alias']].fillna('')
-        dog = pd.read_csv(
-            self.cfg.BASE.DOG_DATA)[['chinese_name',
-                                     'chinese_alias']].fillna('')
-        sym = pd.read_csv(
-            self.cfg.BASE.SYMPTOM_DATA).dropna(how='all').fillna('')
-        ill = {
-            x.strip(): x.strip()
-            for x in open(self.cfg.BASE.DISEASE_DATA).readlines()
-        }
-        cat = dict(zip(cat['chinese_name'].values,
-                       cat['chinese_alias'].values))
-        dog = dict(zip(dog['chinese_name'].values,
-                       dog['chinese_alias'].values))
-        sym = dict(zip(sym['symtom'].values, sym['alias'].values))
-        self.specialize_words = {
-            '猫': Words.normalize.__func__(cat),
-            '犬': Words.normalize.__func__(dog),
-            '症状': Words.normalize.__func__(sym),
-            '疾病': Words.normalize.__func__(ill)
-        }
+        # cat = pd.read_csv(
+        #     self.cfg.BASE.CAT_DATA)[['chinese_name',
+        #                              'chinese_alias']].fillna('')
+        # dog = pd.read_csv(
+        #     self.cfg.BASE.DOG_DATA)[['chinese_name',
+        #                              'chinese_alias']].fillna('')
+        # sym = pd.read_csv(
+        #     self.cfg.BASE.SYMPTOM_DATA).dropna(how='all').fillna('')
+        # ill = {
+        #     x.strip(): x.strip()
+        #     for x in open(self.cfg.BASE.DISEASE_DATA).readlines()
+        # }
+        # cat = dict(zip(cat['chinese_name'].values,
+        #                cat['chinese_alias'].values))
+        # dog = dict(zip(dog['chinese_name'].values,
+        #                dog['chinese_alias'].values))
+        # sym = dict(zip(sym['symtom'].values, sym['alias'].values))
+        # self.specialize_words = {
+        #     'CAT': Words.normalize.__func__(cat),
+        #     'DOG': Words.normalize.__func__(dog),
+        #     'SYMPTOMS': Words.normalize.__func__(sym),
+        #     'DISEASE': Words.normalize.__func__(ill)
+        # }
+        sp = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.SPECIALIZE_COLLECTION,
+                                               {})))[['name', 'alias', 'type']]
+        self.specialize_words = sp.groupby('type')['name', 'alias'].apply(
+            lambda x: dict(zip(x['name'], x['alias']))).to_dict()
 
         new_word_path = os.path.join(self.cfg.BASE.DATA_PATH,
                                      'dictionary/segmentation/new_word.csv')
