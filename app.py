@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 from config import get_cfg
 from flask import Flask, jsonify, request
-from core.tools import setup_logger
-from core.main import Search
-from core.intent import Fasttest
-from core.knowledge import EntityLink
+from qa.tools import setup_logger
+from qa.main import Search
+from qa.intent import Fasttest
+from qa.knowledge import EntityLink
 
 logger = setup_logger()
 cfg = get_cfg()
