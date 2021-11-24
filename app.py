@@ -38,9 +38,9 @@ def retrieval():
 def entity():
     data = request.json
     query = data['query']
-    entity = el.entity_link(query)
-    return jsonify({"entity": entity})
-
+    entity, type = el.entity_link(query)
+    return jsonify({"entity": entity, "type": type})
+0
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=cfg.WEB.PORT, debug=True)
