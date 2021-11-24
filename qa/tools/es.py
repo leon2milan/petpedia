@@ -28,7 +28,7 @@ class ES:
         res = [{
             'es_id':
             x['_id'],
-            'mongo_id':
+            'index':
             x["_source"]['_idx'],
             'docid':
             x["_source"]['question'],

@@ -165,7 +165,7 @@ class HNSW(ANN):
             item['question'] if self.cfg.RETRIEVAL.USE_ES else
             item['question'] + ":" + str(item['index']),
             'index':
-            item['index'],
+            str(item['_id']),
             'score':
             20 - distances[item['index']],
             'pos': [],
