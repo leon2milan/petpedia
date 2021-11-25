@@ -50,7 +50,7 @@ def hot():
     return jsonify({"entity": entity, "type": type})
 
 @app.route('/spam_detect', methods=["POST"])
-def hot():
+def spam_detect():
     entity, type = helper.hot_query()
     return jsonify({"entity": entity, "type": type})
 
