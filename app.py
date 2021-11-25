@@ -51,7 +51,9 @@ def hot():
 
 @app.route('/spam_detect', methods=["POST"])
 def spam_detect():
-    flag, sensetive_words = helper.sensetive_detect()
+    data = request.json
+    query = data['query']
+    flag, sensetive_words = helper.sensetive_detect(query)
     return jsonify({"flag": flag, "sensetive_words": sensetive_words})
 
 
