@@ -20,6 +20,7 @@ _C.BASE.QA_COLLECTION = 'qa'
 _C.BASE.KNOWLEDGE_COLLECTION = 'DOG'
 _C.BASE.SQL_COLLECTION = 'Neo4jQueryStatement'
 _C.BASE.SPECIALIZE_COLLECTION = 'AliasMapTABLE'
+_C.BASE.SENSETIVE_COLLECTION = 'sensetiveWord'
 
 _C.BASE.MODEL_PATH = os.path.join(ROOT, 'models')
 _C.BASE.QA_DATA = os.path.join(ROOT, 'data/knowledge_graph/all_qa.csv')

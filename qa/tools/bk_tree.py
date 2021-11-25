@@ -57,7 +57,7 @@ def Levenshteind(a, b):
     return storage[lena][lenb]
 
 
-class BKTree(object):
+class BKtree(object):
     """BK-tree data structure that allows fast querying of matches that are
     "close" given a function to calculate a distance metric (e.g., Hamming
     distance or Levenshtein distance).
@@ -214,10 +214,13 @@ class BKTree(object):
 # This part of the code is a test function , that just tests a sample case
 if __name__ == '__main__':
     cfg = get_cfg()
-    text = ["".join(x.strip().split()) for x in open(cfg.BASE.FINE_WORD_FILE).readlines()]
-    tree = BKTree(cfg)
+    text = ["".join(x.strip().split()) for x in open(cfg.BASE.FINE_WORD_FILE).readlines()][10000]
+    tree = BKtree(cfg)
+    import time
+    s = time.time()
     tree.builder(text)
-    text = [
+    print('build time = {}'.format(time.time() - s))
+    test = [
         "我要买猫沙盆",  # 错字
         "窝要去医院",  # 错字
         "看见猫猫精神没有",  # 乱序
@@ -237,5 +240,39 @@ if __name__ == '__main__':
         '我生病了,咳数了好几天',
         '我想买哥苹果手机'
     ]
-    for x in text:
-        print(tree.find(x, 2))
+    min_t = 100
+    max_t = 0
+    all_t = []
+    for x in test:
+        s = time.time()
+        res = tree.find(x, 2)
+        t = time.time() - s
+        all_t.append(t)
+        if t < min_t:
+            min_t = t
+        if t > max_t:
+            max_t = t
+    print('Python version took min time {}, max time {}, avg time {}'.format(min_t, max_t, sum(all_t) / len(all_t)))
+
+    from qa.tools.bktree.BKTree import BKTree
+    bktree = BKTree()
+
+    s = time.time()
+    for i in text:
+        bktree.add(i)
+    print('build time = {}'.format(time.time() - s))
+    
+    min_t = 100
+    max_t = 0
+    all_t = []
+    for i in test:
+        s = time.time()
+        res = bktree.search(i, 2)
+        t = time.time() - s
+        all_t.append(t)
+        if t < min_t:
+            min_t = t
+        if t > max_t:
+            max_t = t
+    print('Python version took min time {}, max time {}, avg time {}'.format(min_t, max_t, sum(all_t) / len(all_t)))
+

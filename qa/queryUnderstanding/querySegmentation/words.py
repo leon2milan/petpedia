@@ -83,12 +83,15 @@ class Words():
         :param mysql: obj
         :return: dict {subsystem1:[word1,word2,..], subsystem2:[word11,word12...],...}
         """
-        self.sensitive_words = flatten([
-            x.strip() for y in os.listdir(self.cfg.DICTIONARY.SENSITIVE_PATH)
-            for x in open(os.path.join(self.cfg.DICTIONARY.SENSITIVE_PATH,
-                                       y)).readlines()
-        ])
-
+        # self.sensitive_words = flatten([
+        #     x.strip() for y in os.listdir(self.cfg.DICTIONARY.SENSITIVE_PATH)
+        #     for x in open(os.path.join(self.cfg.DICTIONARY.SENSITIVE_PATH,
+        #                                y)).readlines()
+        # ])
+        sw = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.SENSETIVE_COLLECTION,
+                                               {})))[['word', 'type']]
+        self.sensitive_words = sw['word'].tolist()
+        
     def get_stop_words(self):
         self.stop_words = [
             x.strip()

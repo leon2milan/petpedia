@@ -1,4 +1,4 @@
-from qa.server.search import AdvancedSearch
+from qa.search.search import AdvancedSearch
 from config import get_cfg
 from qa.tools import setup_logger
 import time

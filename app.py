@@ -6,6 +6,7 @@ from qa.tools import setup_logger
 from qa.main import Search
 from qa.intent import Fasttest
 from qa.knowledge import EntityLink
+from qa.search import SearchHelper
 
 logger = setup_logger()
 cfg = get_cfg()
@@ -13,6 +14,7 @@ cfg = get_cfg()
 intent = Fasttest(cfg, 'two_intent')
 searchObj = Search(cfg)
 el = EntityLink(cfg)
+helper = SearchHelper(cfg)
 
 app = Flask(__name__)
 
@@ -40,7 +42,18 @@ def entity():
     query = data['query']
     entity, type = el.entity_link(query)
     return jsonify({"entity": entity, "type": type})
-0
+
+
+@app.route('/hot', methods=["POST"])
+def hot():
+    entity, type = helper.hot_query()
+    return jsonify({"entity": entity, "type": type})
+
+@app.route('/spam_detect', methods=["POST"])
+def hot():
+    entity, type = helper.hot_query()
+    return jsonify({"entity": entity, "type": type})
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=cfg.WEB.PORT, debug=True)

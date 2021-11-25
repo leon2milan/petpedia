@@ -14,7 +14,7 @@ class TermRetrieval():
             from qa.tools.es import ES
             self.es = ES(cfg)
         else:
-            from qa.server import Index
+            from qa.search import Index
             self.ri = Index(self.cfg)
             self.K1 = self.cfg.RETRIEVAL.TERM.K1
             self.K3 = self.cfg.RETRIEVAL.TERM.K3
