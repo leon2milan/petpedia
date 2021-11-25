@@ -46,13 +46,13 @@ def entity():
 
 @app.route('/hot', methods=["POST"])
 def hot():
-    entity, type = helper.hot_query()
-    return jsonify({"entity": entity, "type": type})
+    hot_question = helper.hot_query()
+    return jsonify({"hot_question": hot_question})
 
 @app.route('/spam_detect', methods=["POST"])
 def spam_detect():
-    entity, type = helper.hot_query()
-    return jsonify({"entity": entity, "type": type})
+    flag, sensetive_words = helper.hot_query()
+    return jsonify({"flag": flag, "sensetive_words": sensetive_words})
 
 
 if __name__ == '__main__':
