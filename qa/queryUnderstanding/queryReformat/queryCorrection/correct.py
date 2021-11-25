@@ -11,8 +11,7 @@ import pycedar
 import pycorrector
 from config import get_cfg
 from qa.matching.lexical.lexical_similarity import LexicalSimilarity
-from qa.tools.bk_tree import \
-    BKTree
+from qa.tools.bktree.BKTree import BKTree
 from qa.queryUnderstanding.queryReformat.queryCorrection.pinyin import Pinyin
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.queryUnderstanding.representation.ngram import BiGram
