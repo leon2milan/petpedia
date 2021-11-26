@@ -89,7 +89,7 @@ class Words():
         #                                y)).readlines()
         # ])
         sw = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.SENSETIVE_COLLECTION,
-                                               {})))[['word', 'type']]
+                                               {})))[['word']]
         self.sensitive_words = sw['word'].tolist()
         
     def get_stop_words(self):

@@ -45,4 +45,4 @@ if __name__ == "__main__":
     cfg = get_cfg()
     helper = SearchHelper(cfg)
     print(helper.hot_query())
-    print(helper.sensetive_detect('共匪'))
+    print(helper.sensetive_detect('习大大'))
