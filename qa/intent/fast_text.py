@@ -48,7 +48,7 @@ class Fasttest(object):
         negtive['len'] = negtive['content'].apply(len)
         negtive = negtive[negtive['len'] > 1]
         negtive['content'] = negtive['content'].apply(
-            lambda x: "".join(x) + "\t" + "__lable__" + str(0))
+            lambda x: " ".join(x) + "\t" + "__lable__" + str(0))
 
         positive = pd.DataFrame(
             list(self.mongo.find(self.cfg.BASE.QA_COLLECTION,
@@ -82,6 +82,7 @@ class Fasttest(object):
         # print("Number of examples:", result.nexamples)  #预测错的例子
 
     def predict(self, text_list):
+        text_list = [" ".join(x) for x in self.seg.cut(text_list)]
         lable, probs = self.classifier.predict(text_list)
         return INTENT_MAP[lable[0][0]], probs[0].tolist()[0]
 
@@ -90,5 +91,6 @@ if __name__ == '__main__':
     cfg = get_cfg()
     intent = Fasttest(cfg, 'two_intent')
 
-    text = ["拉布拉多 不 吃 东西 怎么 办"]
+    text = ["拉布拉多不吃东西怎么办", "金毛犬如何鉴定"]
+
     print(intent.predict(text))

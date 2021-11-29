@@ -61,6 +61,10 @@ class Words():
     def get_samepinyin(self):
         return self.same_pinyin
 
+    @property
+    def get_tsc_words(self):
+        return self.tsc
+
     def init(self):
         """相当于run() 同义词先跑"""
         self.get_synonym_words(
@@ -70,6 +74,7 @@ class Words():
         self.get_sensitive_words()
         self.get_pinyin()
         self.get_stroke()
+        self.get_tsc()
         return True
 
     def reload(self):
@@ -88,15 +93,37 @@ class Words():
         #     for x in open(os.path.join(self.cfg.DICTIONARY.SENSITIVE_PATH,
         #                                y)).readlines()
         # ])
-        sw = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.SENSETIVE_COLLECTION,
-                                               {})))[['word']]
+        sw = pd.DataFrame(
+            list(self.mongo.find(self.cfg.BASE.SENSETIVE_COLLECTION,
+                                 {})))[['word']]
         self.sensitive_words = sw['word'].tolist()
-        
+
     def get_stop_words(self):
         self.stop_words = [
             x.strip()
             for x in open(self.cfg.DICTIONARY.STOP_WORDS).readlines()
         ]
+
+    def get_tsc(self):
+        tsc = pd.DataFrame(
+            list(self.mongo.find(self.cfg.BASE.TSC_COLLECTION, {})))
+        res = {}
+
+        for i in [
+                "fourcorner_encode", "han_structure", "shenmu_encode",
+                "stroke", "stroke_map", "structure_map", "tsc_map",
+                "yunmu_encode"
+        ]:
+            if i == 'stroke_map':
+                tmp = tsc[['stroke', i]].dropna().drop_duplicates()
+                res[i] = dict(zip(tmp['stroke'], tmp[i]))
+            elif i == 'structure_map':
+                tmp = tsc[['han_structure', i]].dropna().drop_duplicates()
+                res[i] = dict(zip(tmp['han_structure'], tmp[i]))
+                res[i]['0'] = '0'
+            else:
+                res[i] = dict(zip(tsc.iloc[tsc[i].dropna().index]['content'].dropna(), tsc[i].dropna()))
+        self.tsc = res
 
     @staticmethod
     def normalize(dic):
@@ -129,8 +156,9 @@ class Words():
         #     'SYMPTOMS': Words.normalize.__func__(sym),
         #     'DISEASE': Words.normalize.__func__(ill)
         # }
-        sp = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.SPECIALIZE_COLLECTION,
-                                               {})))[['name', 'alias', 'type']]
+        sp = pd.DataFrame(
+            list(self.mongo.find(self.cfg.BASE.SPECIALIZE_COLLECTION,
+                                 {})))[['name', 'alias', 'type']]
         self.specialize_words = sp.groupby('type')['name', 'alias'].apply(
             lambda x: dict(zip(x['name'], x['alias']))).to_dict()
 

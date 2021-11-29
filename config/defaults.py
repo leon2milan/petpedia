@@ -1,5 +1,5 @@
 import os
-
+import torch
 from .config import CfgNode as CN
 from config import ROOT
 
@@ -21,6 +21,7 @@ _C.BASE.KNOWLEDGE_COLLECTION = 'DOG'
 _C.BASE.SQL_COLLECTION = 'Neo4jQueryStatement'
 _C.BASE.SPECIALIZE_COLLECTION = 'AliasMapTABLE'
 _C.BASE.SENSETIVE_COLLECTION = 'sensetiveWord'
+_C.BASE.TSC_COLLECTION = 'toneShapeCode'
 
 _C.BASE.MODEL_PATH = os.path.join(ROOT, 'models')
 _C.BASE.QA_DATA = os.path.join(ROOT, 'data/knowledge_graph/all_qa.csv')
@@ -132,6 +133,44 @@ _C.REPRESENTATION.CUSTOM_W2V = CN()
 _C.REPRESENTATION.CUSTOM_W2V.EMB_SIZE = 200
 _C.REPRESENTATION.CUSTOM_W2V.SAVE_PATH = os.path.join(
     ROOT, 'models/embedding/custom_w2v.bin')
+
+# self pet pretrain model
+_C.REPRESENTATION.PRE_TRAIN = CN()
+_C.REPRESENTATION.PRE_TRAIN.USE_WORD = False
+_C.REPRESENTATION.PRE_TRAIN.MODE = 'base'  #['base', 'medium', 'small', 'tiny']
+
+#simCSE
+_C.REPRESENTATION.SIMCSE = CN()
+# 基本参数
+_C.REPRESENTATION.SIMCSE.TYPE = 'unsup'  #['unsup', 'sup']
+_C.REPRESENTATION.SIMCSE.EPOCHS = 20
+_C.REPRESENTATION.SIMCSE.BATCH_SIZE = 64
+_C.REPRESENTATION.SIMCSE.LR = 1e-5
+_C.REPRESENTATION.SIMCSE.DROPOUT = 0.3
+_C.REPRESENTATION.SIMCSE.MAXLEN = 64
+_C.REPRESENTATION.SIMCSE.POOLING = 'cls'  # choose in ['cls', 'pooler', 'first-last-avg', 'last-avg']
+_C.REPRESENTATION.SIMCSE.DEVICE = 'cuda'  #['cuda', 'cpu']
+_C.REPRESENTATION.SIMCSE.TRAIN_DATA = _C.BASE.CHAR_FILE
+# _C.REPRESENTATION.SIMCSE.EVAL_DATA =
+# _C.REPRESENTATION.SIMCSE.TEST_DATA =
+
+# 预训练模型目录
+if _C.REPRESENTATION.PRE_TRAIN.USE_WORD:
+    model = [
+        x for x in os.listdir(os.path.join(ROOT, "../pretrained_model"))
+        if _C.REPRESENTATION.PRE_TRAIN.MODE in x and 'word' in x
+    ][0]
+else:
+    model = [
+        x for x in os.listdir(os.path.join(ROOT, "../pretrained_model"))
+        if _C.REPRESENTATION.PRE_TRAIN.MODE in x and 'word' not in x
+    ][0]
+_C.REPRESENTATION.SIMCSE.PRETRAINED_MODEL = os.path.join(ROOT, "../pretrained_model", model)
+
+# 微调后参数存放位置
+_C.REPRESENTATION.SIMCSE.SAVE_PATH = os.path.join(
+    ROOT,
+    'models/representation/simcse_{}.pt'.format(_C.REPRESENTATION.SIMCSE.TYPE))
 
 # 同义词挖掘
 _C.SYNONYM = CN()
