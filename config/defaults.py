@@ -151,7 +151,7 @@ _C.REPRESENTATION.SIMCSE.MAXLEN = 64
 _C.REPRESENTATION.SIMCSE.POOLING = 'cls'  # choose in ['cls', 'pooler', 'first-last-avg', 'last-avg']
 _C.REPRESENTATION.SIMCSE.DEVICE = 'cuda'  #['cuda', 'cpu']
 _C.REPRESENTATION.SIMCSE.TRAIN_DATA = _C.BASE.CHAR_FILE
-# _C.REPRESENTATION.SIMCSE.EVAL_DATA =
+_C.REPRESENTATION.SIMCSE.EVAL_DATA = os.path.join(ROOT, "data/similarity/cnsd-sts-dev.txt")
 # _C.REPRESENTATION.SIMCSE.TEST_DATA =
 
 # 预训练模型目录

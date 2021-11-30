@@ -214,8 +214,6 @@ class BasicSearch():
             result[match_type] = TermRetrieval.sort_result(result[match_type])
             result[match_type] = TermRetrieval.limit(result[match_type],
                                                      self.cfg.RETRIEVAL.LIMIT)
-            print(match_type,
-                  [(x['docid'], x['score']) for x in result[match_type]])
         # 去重
         result = self.__filter_duplicate(result)
         logger.debug('retrieval result after deduplicated: {}'.format(result))
@@ -224,6 +222,7 @@ class BasicSearch():
         result = self.__cal_similarity([
             x['query'] for x in seek_query_list if x['type'] == 'BEST_MATCH'
         ][0], result)
+
         result = TermRetrieval.sort_result(result)
         result = TermRetrieval.limit(result, self.cfg.RETRIEVAL.LIMIT)
         result = self.__trans_to_ind(result)

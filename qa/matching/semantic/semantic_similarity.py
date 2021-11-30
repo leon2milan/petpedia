@@ -1,7 +1,7 @@
 from qa.matching import Matching
 from config import get_cfg
 from scipy import spatial
-import numpy as np
+import math
 from qa.queryUnderstanding.representation import W2V, Embedding
 
 
@@ -15,6 +15,8 @@ class SemanticSimilarity(Matching):
         v1 = Embedding.wam(s1_list, self.w2v.model, agg='mean')
         v2 = Embedding.wam(s2_list, self.w2v.model, agg='mean')
         sim = 1 - spatial.distance.cosine(v1, v2)
+        if math.isnan(sim):
+            sim = 0.0
         return sim
 
     def get_score(self, s1, s2, model='cosine'):

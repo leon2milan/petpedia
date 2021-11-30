@@ -19,13 +19,23 @@ from qa.tools import setup_logger
 logger = setup_logger()
 
 
-def load_data(path: str) -> List:
-    tmp = []
-    with open(path, 'r') as f:
-        for line in f.readlines():
-            tmp.append("".join(line.strip().split()))
-    return tmp
-    
+def load_data(name: str, path: str) -> List:
+    def load_self(path):
+        tmp = []
+        with open(path, 'r') as f:
+            for line in f.readlines():
+                tmp.append("".join(line.strip().split()))
+        return tmp
+
+    def load_sts_data(path):
+        with open(path, 'r', encoding='utf8') as f:
+            return [(line.split("||")[1], line.split("||")[2],
+                     line.split("||")[3]) for line in f]
+
+    if name == 'self':
+        return load_self(path)
+    return load_sts_data(path)
+
 
 class TrainDataset(Dataset):
     """训练数据集, 重写__getitem__和__len__方法"""
@@ -75,13 +85,12 @@ class SimcseModel(nn.Module):
         super(SimcseModel, self).__init__()
         self.cfg = cfg
         config = BertConfig.from_pretrained(
-            self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL.PRETRAINED_MODEL)
+            self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL)
         config.attention_probs_dropout_prob = self.cfg.REPRESENTATION.SIMCSE.DROPOUT  # 修改config的dropout系数
         config.hidden_dropout_prob = self.cfg.REPRESENTATION.SIMCSE.DROPOUT
         self.bert = BertModel.from_pretrained(
-            self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL.PRETRAINED_MODEL,
-            config=config)
-        self.pooling = self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL.POOLING
+            self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL, config=config)
+        self.pooling = self.cfg.REPRESENTATION.SIMCSE.POOLING
 
     def forward(self, input_ids, attention_mask, token_type_ids):
 
@@ -186,18 +195,18 @@ def train(model, train_dl, dev_dl, optimizer, device, save_path) -> None:
             real_batch_num * 2, -1).to(device)
 
         out = model(input_ids, attention_mask, token_type_ids)
-        loss = simcse_unsup_loss(out)
+        loss = simcse_unsup_loss(out, device)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        if batch_idx % 10 == 0:
-            logger.info(f'loss: {loss.item():.4f}')
-            corrcoef = eval(model, dev_dl)
+        if batch_idx % 1000 == 0:
+            corrcoef = eval(model, dev_dl, device)
+            logger.info(f'loss: {loss.item():.4f}， corrcoef: {corrcoef:.4f}')
+            torch.save(model.state_dict(), save_path)
             model.train()
             if best < corrcoef:
                 best = corrcoef
-                torch.save(model.state_dict(), save_path)
                 logger.info(
                     f"higher corrcoef: {best:.4f} in batch: {batch_idx}, save model"
                 )
@@ -205,7 +214,8 @@ def train(model, train_dl, dev_dl, optimizer, device, save_path) -> None:
 
 if __name__ == '__main__':
     cfg = get_cfg()
-    device = cfg.REPRESENTATION.SIMCSE.DEVICE
+    device = torch.device(
+        'cuda' if cfg.REPRESENTATION.SIMCSE.DEVICE else 'cpu')
     model_path = cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL
     batch_size = cfg.REPRESENTATION.SIMCSE.BATCH_SIZE
     save_path = cfg.REPRESENTATION.SIMCSE.SAVE_PATH
@@ -214,13 +224,14 @@ if __name__ == '__main__':
     )
     tokenizer = BertTokenizer.from_pretrained(model_path)
     # load data
-    data = load_data(cfg.REPRESENTATION.SIMCSE.TRAIN_DATA)
-    random.shuffle(data)
-    train_data, dev_data = data[:int(len(data) *
-                                     0.8)], data[int(len(data) * 0.8) + 1:]
-    train_dataloader = DataLoader(TrainDataset(train_data),
+    train_data = load_data('self', cfg.REPRESENTATION.SIMCSE.TRAIN_DATA)
+    random.shuffle(train_data)
+
+    dev_data = load_data('sts', cfg.REPRESENTATION.SIMCSE.EVAL_DATA)
+    train_dataloader = DataLoader(TrainDataset(cfg, train_data),
                                   batch_size=batch_size)
-    dev_dataloader = DataLoader(TestDataset(dev_data), batch_size=batch_size)
+    dev_dataloader = DataLoader(TestDataset(cfg, dev_data),
+                                batch_size=batch_size)
     # load model
     assert cfg.REPRESENTATION.SIMCSE.POOLING in [
         'cls', 'pooler', 'last-avg', 'first-last-avg'

@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from config.config import get_cfg
 from qa.tools import setup_logger
 from transformers import BertConfig, BertModel, BertTokenizer
+from qa.matching.semantic.simCSE.unsup import SimcseModel
 
 logger = setup_logger()
 
@@ -10,16 +11,14 @@ logger = setup_logger()
 class SIMCSE:
     def __init__(self, cfg) -> None:
         self.cfg = cfg
-        self.device = self.cfg.REPRESENTATION.SIMCSE.DEVICE
-        self.model_path = self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL.PRETRAINED_MODEL
-        config = BertConfig.from_pretrained(self.model_path)
-        config.attention_probs_dropout_prob = self.cfg.REPRESENTATION.SIMCSE.DROPOUT  # 修改config的dropout系数
-        config.hidden_dropout_prob = self.cfg.REPRESENTATION.SIMCSE.DROPOUT
-        self.model = BertModel.from_pretrained(
-            self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL.SAVE_PATH,
-            config=config)
-        self.model.eval()
+        self.model_path = self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL
+        self.device = torch.device(self.cfg.REPRESENTATION.SIMCSE.DEVICE)
         self.tokenizer = BertTokenizer.from_pretrained(self.model_path)
+        self.model = SimcseModel(self.cfg).to(self.device)
+        print('load model ...')
+        self.model.load_state_dict(
+            torch.load(self.cfg.REPRESENTATION.SIMCSE.SAVE_PATH))
+        self.model.eval()
 
     def get_embedding(self, text) -> float:
         """模型评估函数 
@@ -45,12 +44,22 @@ class SIMCSE:
     def similarity(self, str1, str2):
         str1 = self.get_embedding(str1)
         str2 = self.get_embedding(str2)
-        return F.cosine_similarity(str1, str2, dim=-1)
+        return F.cosine_similarity(str1, str2, dim=-1).cpu().numpy()
 
 
 if __name__ == '__main__':
     cfg = get_cfg()
     simcse = SIMCSE(cfg)
-    print(simcse('哈士奇拆家怎么办', '猫拉肚子不吃东西'))
-    print(simcse('猫癣', '什么是猫癣'))
-    print(simcse('猫癣', '猫癣转阴'))
+    import time
+    test = [['哈士奇拆家怎么办', '猫拉肚子不吃东西'], 
+            ['哈士奇拆家怎么办', '哈士奇总是乱咬东西怎么办'], 
+            ['哈士奇拆家怎么办', '狗拆家怎么办'], 
+            ['猫癣', '什么是猫癣'],
+            ['什么是猫癣', '得了猫癣怎么办'], 
+            ['猫癣', '猫癣转阴']]
+
+    for i in test:
+        s = time.time()
+        print(
+            f"query: {i[0]}, candidate: {i[1]}, score: {simcse.similarity(i[0], i[1])}, time: {time.time() - s}"
+        )

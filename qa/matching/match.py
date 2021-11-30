@@ -3,6 +3,7 @@ from qa.matching.semantic import SemanticSimilarity
 from qa.tools import setup_logger
 from qa.matching import Matching
 from config import get_cfg
+
 logger = setup_logger()
 
 
@@ -18,7 +19,9 @@ class Similarity(Matching):
         candidate_cut_list = self.seg.cut(candidate_list)
         res = []
         for i in range(len(candidate_cut_list)):
-            res.append(self.get_score(query, candidate_list[i], query_list, candidate_cut_list[i]))
+            res.append(
+                self.get_score(query, candidate_list[i], query_list,
+                               candidate_cut_list[i]))
         return res
 
     def get_score(self, s1, s2, s1_list=None, s2_list=None):
@@ -35,7 +38,9 @@ class Similarity(Matching):
             elif method == 'cosine':
                 score += self.ss.get_score(s1_list, s2_list, 'cosine')
             else:
-                logger.warning('We do not know the similarity method of {}. Please contact the developper.'.format(method))
+                logger.warning(
+                    'We do not know the similarity method of {}. Please contact the developper.'
+                    .format(method))
                 score += 0
         return score
 

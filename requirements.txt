@@ -1,3 +1,4 @@
+transformers
 fasttext
 dateutils
 cn2an
