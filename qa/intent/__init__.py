@@ -1,0 +1,1 @@
+from .fast_text import Fasttest
