@@ -13,7 +13,7 @@ from setuptools import find_packages, setup
 #                    ["qa/tools/bktree/library.cc", "qa/tools/bktree/bktree.cc"],
 #                    libraries=['boost_python3'],
 #                    extra_compile_args=['-std=c++11'])
-with pathlib.Path("requirements.txt").open() as f:
+with pathlib.Path("requirements_deploy.txt").open() as f:
     install_requires = [
         str(requirement) for requirement in pkg_resources.parse_requirements(f)
     ]

@@ -27,12 +27,3 @@ pymongo
 gunicorn
 flask
 gevent
-onnx
-onnxruntime-gpu
-tritonclient[all]
-pycuda
-nvidia-pyindex
-nvidia-tensorrt
-onnx_graphsurgeon
-polygraphy
-triton-model-analyzer

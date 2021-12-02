@@ -39,14 +39,6 @@ FROM nvcr.io/nvidia/tritonserver:21.11-py3
 # see .dockerignore to check what is transfered
 COPY . ./
 
-RUN git clone https://github.com/kpu/kenlm.git && \
-    cd kenlm && \
-    mkdir -p build  && \
-    cd build  && \
-    cmake ..  && \
-    make -j 4 && \
-    cd ../../
-
 RUN pip install -U pip && \
     pip install Cython && \
     pip install nvidia-pyindex && \
