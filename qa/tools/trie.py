@@ -5,6 +5,8 @@ from config import get_cfg
 from qa.queryUnderstanding.querySegmentation.words import Words
 
 from qa.tools import flatten
+import sys
+sys.setrecursionlimit(10000)
 
 
 class Trie:
@@ -109,13 +111,14 @@ class Trie:
         with open(
                 os.path.join(self.cfg.BASE.MODEL_PATH, "embedding",
                              name + '_trie.pkl'), 'wb') as f:
-            pickle.dump(self.root, f)
+            pickle.dump(self.dict, f)
 
     def load(self, name):
         with open(
                 os.path.join(self.cfg.BASE.MODEL_PATH, "embedding",
                              name + '_trie.pkl'), 'rb') as f:
-            self.root = pickle.load(f)
+            self.dict = pickle.load(f)
+
 
 if __name__ == "__main__":
 

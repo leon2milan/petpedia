@@ -1,18 +1,40 @@
 #!/usr/bin/env python
 
-from distutils.core import setup, Extension
+import pathlib
 
-bktree = Extension("BKTree",
-                   ["qa/tools/bktree/library.cc", "qa/tools/bktree/bktree.cc"],
-                   libraries=['boost_python3'],
-                   extra_compile_args=['-std=c++11'])
+import pkg_resources
+from setuptools import find_packages, setup
 
-setup(name='PetPedia',
-      version='0.0.1',
-      author='Jiang',
-      ext_modules=[bktree],
-      script_args=['build_ext'],
-      options={'build_ext': {
-          'inplace': True
-      }},
-      python_requires=">=3.6")
+# from distutils.core import Extension, find_packages, setup
+
+
+
+# bktree = Extension("BKTree",
+#                    ["qa/tools/bktree/library.cc", "qa/tools/bktree/bktree.cc"],
+#                    libraries=['boost_python3'],
+#                    extra_compile_args=['-std=c++11'])
+with pathlib.Path("requirements.txt").open() as f:
+    install_requires = [
+        str(requirement) for requirement in pkg_resources.parse_requirements(f)
+    ]
+
+setup(
+    name='PetPedia',
+    version='0.0.1',
+    author='Jiang',
+    # ext_modules=[],
+    #   script_args=['build_ext'],
+    # options={'build_ext': {
+    #     'inplace': True
+    # }},
+    install_requires=install_requires,
+    long_description=open("README.md", "r", encoding="utf-8").read(),
+    long_description_content_type="text/markdown",
+    # package_dir={"": "qa"},
+    # packages=find_packages(where="qa"),
+    python_requires=">=3.6",
+    entry_points={
+        "console_scripts": [
+            "convert_model = deployment.convert:main",
+        ],
+    })

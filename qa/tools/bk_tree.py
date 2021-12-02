@@ -57,7 +57,7 @@ def Levenshteind(a, b):
     return storage[lena][lenb]
 
 
-class BKtree(object):
+class BKTree(object):
     """BK-tree data structure that allows fast querying of matches that are
     "close" given a function to calculate a distance metric (e.g., Hamming
     distance or Levenshtein distance).
@@ -214,8 +214,8 @@ class BKtree(object):
 # This part of the code is a test function , that just tests a sample case
 if __name__ == '__main__':
     cfg = get_cfg()
-    text = ["".join(x.strip().split()) for x in open(cfg.BASE.FINE_WORD_FILE).readlines()][10000]
-    tree = BKtree(cfg)
+    text = ["".join(x.strip().split()) for x in open(cfg.BASE.FINE_WORD_FILE).readlines()]
+    tree = BKTree(cfg)
     import time
     s = time.time()
     tree.builder(text)

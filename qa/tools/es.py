@@ -1,11 +1,13 @@
 from elasticsearch import Elasticsearch
 import re
-from qa.tools import Singleton
+from qa.tools import Singleton, setup_logger
+logger = setup_logger(name='es')
 
 @Singleton
 class ES:
     def __init__(self, cfg) -> None:
         self.cfg = cfg
+        logger.info(f"connect to {self.cfg.BASE.ENVIRONMENT}")
         self.es = Elasticsearch('http://{}:{}@{}:{}'.format(
             'elastic',
             cfg.ES.PWD,

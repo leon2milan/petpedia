@@ -1,6 +1,8 @@
 import time
 import functools
 from qa.tools.logger import setup_logger
+import socket
+
 
 logger = setup_logger()
 
@@ -13,6 +15,17 @@ logger = setup_logger()
 #             cls._instances[key] = super(Singleton,
 #                                         cls).__call__(*args, **kwargs)
 #         return cls._instances[key]
+
+
+def get_host_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+
+    return ip
 
 
 def trycatch(func):

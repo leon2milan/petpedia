@@ -1,34 +1,23 @@
-import collections
+import gc
 import os
 import re
 import time
-from functools import partial, reduce
-from itertools import chain
-from typing import Counter, Iterator
-import gc
+from collections import Counter
+
 import kenlm
-import pycedar
+import pandas as pd
 import pycorrector
 from config import get_cfg
 from qa.matching.lexical.lexical_similarity import LexicalSimilarity
-from qa.tools.bktree.BKTree import BKTree
+from qa.matching.lexical.tone_shape_code import TSC, VatiantKMP
 from qa.queryUnderstanding.queryReformat.queryCorrection.pinyin import Pinyin
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.queryUnderstanding.representation.ngram import BiGram
 from qa.tools import flatten, setup_logger
+from qa.tools.bk_tree import BKTree
 from qa.tools.trie import Trie
 
 logger = setup_logger(level='info', name='correction')
-
-
-def ngram(seq: str, n: int) -> Iterator[str]:
-    return (seq[i:i + n] for i in range(0, len(seq) - n + 1))
-
-
-def allngram(seq: str, minn=1, maxn=None) -> Iterator[str]:
-    lengths = range(minn, maxn) if maxn else range(minn, len(seq))
-    ngrams = map(partial(ngram, seq), lengths)
-    return set(chain.from_iterable(ngrams))
 
 
 def gen_ranges(seg_list):
@@ -40,52 +29,6 @@ def gen_ranges(seg_list):
     return res
 
 
-def overlap(l1, l2):
-    # Detect whether two intervals l1 and l2 overlap
-    # inputs: l1, l2 are lists representing intervals
-    if l1[0] < l2[0]:
-        if l1[1] <= l2[0]:
-            return False
-        else:
-            return True
-    elif l1[0] == l2[0]:
-        return True
-    else:
-        if l1[0] >= l2[1]:
-            return False
-        else:
-            return True
-
-
-def get_ranges(outranges, segranges):
-    # Get the overlap ranges of outranges and segranges
-    # outranges: ranges corresponding to score outliers
-    # segranges: ranges corresponding to word segmentation scores
-    overlap_ranges = set()
-    for segrange in segranges:
-        for outrange in outranges:
-            if overlap(outrange, segrange):
-                overlap_ranges.add(tuple(segrange))
-    return [list(overlap_range) for overlap_range in overlap_ranges]
-
-
-def merge_ranges(ranges):
-    # Merge overlapping ranges
-    # ranges: list of ranges
-    ranges.sort()
-    saved = ranges[0][:]
-    results = []
-    for st, en in ranges:
-        if st <= saved[1]:
-            saved[1] = max(saved[1], en)
-        else:
-            results.append(saved[:])
-            saved[0] = st
-            saved[1] = en
-    results.append(saved[:])
-    return results
-
-
 class SpellCorrection(object):
     def __init__(self, cfg):
         logger.info('Initializing Correction Module ....')
@@ -95,13 +38,11 @@ class SpellCorrection(object):
     def init(self):
         self.py = Pinyin(self.cfg)
         self.bigram = BiGram(self.cfg)
+        self.tsc = TSC(self.cfg)
         try:
             self.bigram.load()
         except:
-            text = [
-                x.strip()
-                for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()
-            ]
+            text = [x.strip() for x in open(self.cfg.CHAR_FILE).readlines()]
             bigram = BiGram(cfg)
             bigram.build(text)
             del text, bigram
@@ -123,8 +64,8 @@ class SpellCorrection(object):
             km.convert_format()
             km.count_ngrams()
         self.quad_model = kenlm.Model(kenlm_path)
-        self.dats = self.load_dats(
-        )  # TODO:  替代unigram 降低信息冗余, ternary tree/ trie + csr 优化bigram
+        # self.dats = self.load_dats(
+        # )  # TODO:  替代unigram 降低信息冗余, ternary tree/ trie + csr 优化bigram
         self.same_pinyin = Words(self.cfg).get_samepinyin
         self.same_stroke = Words(self.cfg).get_samestroke
         self.specialization = Words(self.cfg).get_specializewords
@@ -133,11 +74,11 @@ class SpellCorrection(object):
         except:
             text = [
                 "".join(x.strip().split())
-                for x in open(cfg.BASE.FINE_WORD_FILE).readlines()
+                for x in open(cfg.BASE.ROUGH_WORD_FILE).readlines()
             ]
-            tree = BKTree(cfg)
-            tree.builder(text)
-            del text, tree
+            bktree = BKTree(self.cfg)
+            bktree.builder(text)
+            del text, bktree
             gc.collect()
             self.bk = BKTree(self.cfg)
         self.word_trie = self.load_Trie('word')
@@ -161,58 +102,180 @@ class SpellCorrection(object):
             trie.save(name)
         return trie
 
-    def load_dats(self):
-        trie = pycedar.dict()
-        if os.path.exists(self.cfg.CORRECTION.DATS_PATH):
-            trie.load(self.cfg.CORRECTION.DATS_PATH)
-        else:
-            text = collections.Counter(
-                flatten([
-                    x.strip().split()
-                    for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()
-                ]))
-            trie = pycedar.dict()
-            for word, cnt in text.items():
-                trie[word] = cnt
-            trie.save(self.cfg.CORRECTION.DATS_PATH)
-        return trie
-
     def detect(self, text, segranges):
-        err_pos = self.detect_helper(text)
-        # print("assss", merge_ranges(get_ranges(err_pos, segranges)))
-        # err = SpellCorrection.mergeIntervals(err)
-        # raw = "".join(text)
-        # err_seq = [raw[x[0]: x[1]] for x in err]
-        # common = SpellCorrection.mul_string_lcs(err_seq)
+        err_pos = []
+        for i in range(len(text)):
+            item = text[i]
+            before_item_ssc = self.tsc.getSSC(text[i - 1] if i else '' + item,
+                                              'ALL')
+            after_item_ssc = self.tsc.getSSC(
+                item + text[i + 1] if i + 1 < len(text) else '', 'ALL')
+            segrange = segranges[i]
+            baseline = self.cfg.CORRECTION.THRESHOLD * 2
+            before = self.bigram.bi_tf(
+                text[i - 1] if i else self.cfg.BASE.START_TOKEN, item)
+            after = self.bigram.bi_tf(
+                item,
+                text[i + 1] if i + 1 < len(text) else self.cfg.BASE.END_TOKEN)
+            logger.debug(
+                'item : {} , uni count: {}, baseline: {}, before: {}, after: {}'
+                .format(item, self.bigram.uni_tf(item), baseline, before,
+                        after))
+            threshold = int(self.bigram.uni_tf(item) > 100
+                            ) + self.bigram.uni_tf(item) // 1000 + int(
+                                before > self.cfg.CORRECTION.THRESHOLD) + int(
+                                    after > self.cfg.CORRECTION.THRESHOLD)
+            if threshold > 1:
+                # 过滤词频率过高， 保留前后bigram 低频出现
+                logger.debug(f"{item} is passed!!!")
+                continue
+            if len(item) > 1 and self.bigram.uni_tf(item[::-1]) > baseline:
+                # 如果词长度大于1， 判断反转之后词是否具有更高频率
+                err_pos.append({
+                    'word': item,
+                    'st_pos': segrange[0],
+                    'end_pos': segrange[1],
+                    'err_score': 1.0,
+                    'candidate': item[::-1],
+                    'source': 'char_reverse'
+                })
+            if i and before < self.cfg.CORRECTION.THRESHOLD and self.bigram.bi_tf(
+                    item, text[i - 1]) > before:
+                # 与前词交换顺序
+                err_pos.append({
+                    'word': text[i - 1] + item,
+                    'st_pos': segranges[i - 1][0],
+                    'end_pos': segrange[1],
+                    'err_score': 1.0,
+                    'candidate': item + text[i - 1],
+                    'source': 'before_reverse'
+                })
+            if i + 1 < len(
+                    text
+            ) and after < self.cfg.CORRECTION.THRESHOLD and self.bigram.bi_tf(
+                    text[i + 1], item) > after:
+                #与后词交换顺序
+                err_pos.append({
+                    'word': item + text[i + 1],
+                    'st_pos': segrange[0],
+                    'end_pos': segranges[i + 1][1],
+                    'err_score': 1.0,
+                    'candidate': text[i + 1] + item,
+                    'source': 'after_reverse'
+                })
+            if i > 0 and self.bigram.bi_tf(text[i - 1], item) > 0:
+                # 与前词 拼音trie tree 检索
+                tmp = self.py.pinyin_candidate(text[i - 1] + item,
+                                               1,
+                                               method='uni')
+                for can in tmp:
+                    if self.bigram.uni_tf(can) > baseline:
+                        tsc = LexicalSimilarity.jaccard(
+                            "".join(self.tsc.getSSC(can, 'ALL')),
+                            "".join(before_item_ssc)) > 0.6
+                        if tsc > 0.6:
+                            err_pos.append({
+                                'word': text[i - 1] + item,
+                                'st_pos': segranges[i - 1][0],
+                                'end_pos': segrange[1],
+                                'err_score': 2.0 + tsc,
+                                'candidate': can,
+                                'source': 'before_py'
+                            })
+
+            if i + 1 < len(text) and not self.bigram.bi_tf(item, text[i + 1]):
+                # 与后词 拼音trie tree 检索
+                tmp = self.py.pinyin_candidate(item + text[i + 1],
+                                               1,
+                                               method='uni')
+                for can in tmp:
+                    if self.bigram.uni_tf(can) > baseline:
+                        tsc = LexicalSimilarity.jaccard(
+                            "".join(self.tsc.getSSC(can, 'ALL')),
+                            "".join(after_item_ssc))
+                        if tsc > 0.6:
+                            err_pos.append({
+                                'word': item + text[i + 1],
+                                'st_pos': segrange[0],
+                                'end_pos': segranges[i + 1][1],
+                                'err_score': 2.0 + tsc,
+                                'candidate': can,
+                                'source': 'after_py'
+                            })
+
+            if len(item) == 1:
+                # 如果是单字， 取同音字 进行前后匹配判断
+                for char in item:
+                    res = self.same_pinyin.get(char, [])
+                    # res += self.same_stroke.get(char, [])
+                    for can in res:
+                        # modify = item.replace(char, can)
+                        if i and self.bigram.bi_tf(text[i - 1],
+                                                   can) > baseline:
+                            err_pos.append({
+                                'word': item,
+                                'st_pos': segrange[0],
+                                'end_pos': segrange[1],
+                                'err_score': 1.0,
+                                'candidate': can,
+                                'source': 'same'
+                            })
+                        elif i + 1 < len(text) and self.bigram.bi_tf(
+                                can, text[i + 1]) > baseline:
+                            err_pos.append({
+                                'word': item,
+                                'st_pos': segrange[0],
+                                'end_pos': segrange[1],
+                                'err_score': 1.0,
+                                'candidate': can,
+                                'source': 'same'
+                            })
+            # 实体词 匹配
+            tmp = self.py.pinyin_candidate(item, 1, method='entity')
+            for can in tmp:
+                if self.bigram.uni_tf(can) > baseline:
+                    err_pos.append({
+                        'word': item,
+                        'st_pos': segrange[0],
+                        'end_pos': segrange[1],
+                        'err_score': 3.0,
+                        'candidate': can,
+                        'source': 'entity_py'
+                    })
+            # 词 拼音trie tree 匹配
+            if self.bigram.uni_tf(item) < baseline:
+                tmp = self.py.pinyin_candidate(item, 1, method='uni')
+                for can in tmp:
+                    if ((self.bigram.bi_tf(text[i - 1], can)) or
+                        (i + 1 < len(text) and self.bigram.bi_tf(
+                            can, text[i + 1]))) and (can != item):
+                        err_pos.append({
+                            'word': item,
+                            'st_pos': segrange[0],
+                            'end_pos': segrange[1],
+                            'err_score': 2.0,
+                            'candidate': can,
+                            'source': 'all_py'
+                        })
+
+        # bktree 检索整句
+        bk_res = self.bk.find("".join(text), 2)
+        for x in bk_res:
+            err_pos.append({
+                'word': x,
+                'st_pos': 0,
+                'end_pos': len(text),
+                'pos': (0, len(text)),
+                'candidate': x,
+                'err_score': 3.0,
+                'source': 'bktree'
+            })
+        logger.debug('err_pos: {}'.format(err_pos))
+        if err_pos:
+            err_pos = pd.DataFrame(err_pos).groupby(
+                ['candidate', 'end_pos', 'source', 'st_pos', 'word'],
+                as_index=False)['err_score'].agg('sum').to_dict('records')
         return err_pos
-
-    @staticmethod
-    def mul_string_lcs(sequences):
-        if len(sequences) < 2:
-            return sequences
-        maxn = min(map(len, sequences))
-        seqs_ngrams = map(partial(allngram, maxn=maxn), sequences)
-        intersection = reduce(set.intersection, seqs_ngrams)
-        if len(intersection) < 1:
-            return sequences
-        longest = max(intersection, key=len)
-        return [longest]
-
-    @staticmethod
-    def mergeIntervals(intervals):
-        if len(intervals) < 2:
-            return intervals
-        merged = []
-        for i in range(1, len(intervals)):
-            previous = intervals[i - 1]
-            current = intervals[i]
-            if current[0] == previous[0]:
-                merged.append((current[0], max(current[1], previous[1])))
-            elif current[1] == previous[1]:
-                merged.append((min(current[0], previous[0]), current[1]))
-            # else:
-            #     merged.append(current)
-        return list(set(merged))
 
     def detect_helper(self, text):
         """
@@ -287,7 +350,8 @@ class SpellCorrection(object):
         e_pos = (-1, -1)
         can = ""
         candidates = []
-        if "".join(re.findall('[A-Za-z]', text)) == text:
+        py_detect = re.findall('[A-Za-z]', text)
+        if "".join(py_detect) == text:
             candidates = self.py.pinyin_candidate(text, 0, method='uni')
             for x in candidates:
                 uni_score = self.bigram.uni_tf(x)
@@ -300,181 +364,63 @@ class SpellCorrection(object):
         if candidates:
             return ((0, len(text)), candidates, 1.0)
         text_list = self.seg.cut(text, is_rough=True)
+        # text_list = list(text)
         logger.debug('text_list: {}'.format(text_list))
         logger.debug('segmentation takes: {}'.format(time.time() - start))
         segranges = gen_ranges(text_list)
         raw_score = self.get_score(" ".join(text_list))
         err_info = self.detect(text_list, segranges)
+        query_ssc = self.tsc.getSSC(text, 'ALL')
         logger.debug('detect takes: {}'.format(time.time() - start))
-        logger.debug('err_info: {}'.format(err_info))
-        if err_info:
-            for info in err_info:
-                st = info['st_pos']
-                end = info['end_pos']
-                err_score = info['err_score']
-                string = text[st:end]
-                idx = segranges.index((st, end))
-                if idx and idx + 1 < len(segranges):
-                    back = self.bigram.bi_tf(text_list[idx - 1],
-                                             text_list[idx])
-                    future = self.bigram.bi_tf(text_list[idx],
-                                               text_list[idx + 1])
-                else:
-                    back = 0
-                    future = 0
+        logger.info('err_info: {}'.format([(x['candidate'], x['source'])
+                                           for x in err_info]))
+        for err in err_info:
+            sentence = text_list[:err['st_pos']] + [
+                err['candidate']
+            ] + text_list[err['end_pos']:]
+            # sentence['candidate']
+            # sentence = self.seg.cut(sentence, is_rough=True)
 
-                # entity pinyin recall
-                candidates += [{
-                    'candidate': text[:st] + x + text[end:],
-                    'pos': (st, end),
-                    'predict': x,
-                    'err_score': err_score
-                } for x in info['candidate']]
-                logger.debug('entity recall: {}'.format(info['candidate']))
-                logger.debug('entity takes: {}'.format(time.time() - start))
+            # TODO 使用分类模型
+            # lm model ppl 变化情况
+            score = err['err_score']
 
-                # same pinyin / stroke recall
-                if len(string) == 1:
-                    py = self.same_pinyin.get(string, [])
-                    # stroke = self.same_stroke.get(string, [])
-                    res = py  # + stroke
-                    if res:
-                        for x in res:
-                            if (
-                                    idx and
-                                    self.bigram.bi_tf(text_list[idx - 1], x) >
-                                    max(back, self.cfg.CORRECTION.THRESHOLD)
-                            ) or (idx + 1 < len(segranges) and
-                                  self.bigram.bi_tf(x, text_list[idx + 1]) >
-                                  max(future, self.cfg.CORRECTION.THRESHOLD)):
-                                candidates.append({
-                                    'candidate':
-                                    text[:st] + x + text[end:],
-                                    'pos': (st, end),
-                                    'predict':
-                                    x,
-                                    'err_score':
-                                    err_score
-                                })
-                    logger.debug('same recall: {}'.format(candidates))
-                    logger.debug('same takes: {}'.format(time.time() - start))
-                # unigram pinyin recall
-                else:
-                    raw = text_list[idx]
-                    res = self.py.pinyin_candidate(raw, 1, method='uni')
-                    for x in res:
-                        if (idx and self.bigram.bi_tf(text_list[idx - 1], x) >
-                                max(back, self.cfg.CORRECTION.THRESHOLD)
-                            ) or (idx + 1 < len(segranges) and
-                                  self.bigram.bi_tf(x, text_list[idx + 1]) >
-                                  max(future, self.cfg.CORRECTION.THRESHOLD)):
-                            candidates.append({
-                                'candidate':
-                                text[:st] + x + text[end:],
-                                'pos': (st, end),
-                                'predict':
-                                x,
-                                'err_score':
-                                err_score
-                            })
-                    logger.debug('unigram pinyin recall: {}'.format(res))
-                    logger.debug(
-                        'unigram pinyin takes: {}'.format(time.time() - start))
+            kmp = VatiantKMP(0.5)
+            kmp.indexKMP(query_ssc, self.tsc.getSSC(err['candidate'], 'ALL'),
+                         'ALL', self.tsc.strokesDictReverse)
+            if kmp.startIdxRes:
+                score += 2
+            elif 'reverse' in err['source'] or len(py_detect) > 0:
+                score *= 1
+            else:
+                continue
+            score += self.get_score(" ".join(sentence)) - raw_score
+            # 频次变化
+            # score += self.bigram.uni_tf(candidate) - self.bigram.uni_tf(string)
+            # 召回次数
+            # score += freq
+            # 编辑距离
+            score += len(text) - LexicalSimilarity.levenshteinDistance(
+                text, "".join(sentence))
 
-                # context pinyin recall
-                if idx + 1 < len(segranges):
-                    forward_raw = "".join((text_list[idx:idx + 2]))
-                    forward = self.py.pinyin_candidate(forward_raw,
-                                                       1,
-                                                       method='uni')
-                    logger.debug('pinyin search takes: {}'.format(time.time() -
-                                                                  start))
-                    forward = [
-                        x for x in forward
-                        if len(set(x)
-                               & set(forward_raw)) >= 1 and x != forward_raw
-                    ]
-                    if idx and future > self.cfg.CORRECTION.THRESHOLD and back > self.cfg.CORRECTION.THRESHOLD:
-                        surround_raw = "".join(text_list[idx - 1:idx + 2])
-                        surround = self.py.pinyin_candidate(surround_raw,
-                                                            1,
-                                                            method='uni')
-                        print('pinyin search 1 takes: {}'.format(time.time() -
-                                                                 start))
-                        surround = [
-                            x for x in surround
-                            if len(set(x) & set(surround_raw)) >= 1
-                            and x != surround_raw
-                        ]
-                    else:
-                        surround = []
-                    for x in forward:
-                        candidates.append({
-                            'candidate':
-                            text[:st] + x +
-                            text[end + len(text_list[idx + 1]):],
-                            'pos': (st, end + len(text_list[idx + 1])),
-                            'predict':
-                            x,
-                            'err_score':
-                            err_score
-                        })
-                    for x in surround:
-                        candidates.append({
-                            'candidate':
-                            text[:st - len(text_list[idx - 1])] + x +
-                            text[end + len(text_list[idx + 1]):],
-                            'pos': (st - len(text_list[idx - 1]),
-                                    end + len(text_list[idx + 1])),
-                            'predict':
-                            x,
-                            'err_score':
-                            err_score
-                        })
-                    logger.debug('context pinyin recall: {}'.format(forward +
-                                                                    surround))
-                logger.debug('context pinyin takes: {}'.format(time.time() -
-                                                               start))
+            # jaccard 距离
+            score += LexicalSimilarity.jaccard(
+                "".join(Pinyin.get_pinyin_list(text)),
+                "".join(Pinyin.get_pinyin_list("".join(sentence))))
 
-            bk_res = self.bk.find(string, 2)
-            for x in bk_res:
-                candidates.append({
-                    'candidate': x,
-                    'pos': (0, len(text)),
-                    'predict': x,
-                    'err_score': err_score
-                })
-            logger.debug('bktre recall: {}'.format(bk_res))
-            logger.debug('bktree takes: {}'.format(time.time() - start))
-            for candidate in candidates:
-                sentence = candidate['candidate']
-                # sentence = self.seg.cut(sentence, is_rough=True)
-
-                # TODO 使用分类模型
-                # lm model ppl 变化情况
-                score = self.get_score(" ".join(sentence)) - raw_score
-                # 频次变化
-                # score += self.bigram.uni_tf(candidate) - self.bigram.uni_tf(string)
-                # 召回次数
-                # score += freq
-                # 编辑距离
-                score += len(text) - LexicalSimilarity.levenshteinDistance(
-                    text, "".join(sentence))
-                # jaccard 距离
-                score += LexicalSimilarity.jaccard(
-                    "".join(Pinyin.get_pinyin_list(text)),
-                    "".join(Pinyin.get_pinyin_list("".join(sentence))))
-                if score > max_score:
-                    max_score = score
-                    can = candidate['predict']
-                    e_pos = candidate['pos']
-            logger.debug('rank takes: {}'.format(time.time() - start))
-        if not can:
-            _, detail = pycorrector.correct(t)
-            if detail:
-                e_pos = (detail[0][2], detail[0][3])
-                can = detail[0][1]
-                max_score = 1.0
+            if score > max_score:
+                max_score = score
+                # can = candidate['predict']
+                # e_pos = candidate['pos']
+                can = err['candidate']
+                e_pos = (err['st_pos'], err['end_pos'])
+        logger.debug('rank takes: {}'.format(time.time() - start))
+        # if not can:
+        #     _, detail = pycorrector.correct(t)
+        #     if detail:
+        #         e_pos = (detail[0][2], detail[0][3])
+        #         can = detail[0][1]
+        #         max_score = 1.0
         return (e_pos, can, max_score)
 
 
@@ -494,16 +440,19 @@ if __name__ == '__main__':
         '传然给我',
         '呕土不止',
         '一直咳数',
-        '我想找哥医生'
+        '我想找哥医生',
+        "哈士奇老拆家怎么办"
     ]
+    tt = []
     for t in text:
         start = time.time()
         e_pos, candidate, score = sc.correct(t)
+        tt.append(time.time() - start)
         print("raw {}, candidate {} vs: wrong {}, takes time : {}".format(
             t, candidate, t[e_pos[0]:e_pos[1]],
             time.time() - start))
-
         # start = time.time()
         # corrected_sent, detail = pycorrector.correct(t)
         # print(corrected_sent, detail)
         # print("pyccorrect takes time : {}".format(time.time() - start))
+    print(sum(tt) / len(tt))  # 0.015135636696448693

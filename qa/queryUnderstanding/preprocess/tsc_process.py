@@ -1,23 +1,10 @@
 import pickle
+
 import pandas as pd
-from qa.tools.mongo import Mongo
-from qa.queryUnderstanding.preprocess import clean, normal_cut_sentence
-from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from config import get_cfg
-from qa.tools import flatten
-
-from collections import Counter
-from functools import partial
-from qa.queryUnderstanding.representation import SIF, W2V
+from qa.queryUnderstanding.querySegmentation import Segmentation, Words
+from qa.tools.mongo import Mongo
 from tqdm.notebook import tqdm
-
-from gensim.models import KeyedVectors, word2vec
-from lmdb_embeddings.writer import LmdbEmbeddingsWriter
-from lmdb_embeddings.reader import LruCachedLmdbEmbeddingsReader
-import os
-from qa.retrieval.semantic.hnsw import HNSW
-import pickle
-from qa.queryUnderstanding.representation import REPRESENTATION_REGISTRY
 
 tqdm.pandas(desc="Data Process")
 
@@ -27,13 +14,15 @@ seg = Segmentation(cfg)
 stopwords = Words(cfg).get_stopwords
 specialize = Words(cfg).get_specializewords
 
+tmp = pd.read_table(cfg.BASE.CHAR_FILE, names=['text_a'])
+char = list(set([x for y in tmp['text_a'].values.tolist() for x in y]))
 ex = [
     "管理", "管里", "管理员", "服务管理", "服务器", "活动管理员", "冬季热", "官方", "维护", "系统", "系统公告",
     "审查", "巡查", "监督", "监管", "game", "master", "GAMEMASTER", "GameMaster", "GM",
     "Gm", "gm", "游戏管理员", "Client", "Server", "CS", "Cs", "cs", "cS", "KEFU",
     "kefu", "Kefu", "KeFu", "助理", "客户服务", "客服", "服务天使", "TEsT", "tESt", "test",
     "TeSt", "tEST", "Test", "测试", "辅助程序", "运营", "运营者", "运营组", "运营商", "运营长",
-    "运营官", "运营人"
+    "运营官", "运营人", "犬"
 ]
 data = [
     x.strip() for x in open(
@@ -222,6 +211,8 @@ hanzi['stroke_map'] = hanzi['stroke'].map(
     {str(k): v
      for k, v in strokesDict.items()})
 hanzi['structure_map'] = hanzi['han_structure'].map(shapeDict)
+hanzi = hanzi[hanzi['content'].isin(char)].reset_index(drop=True)
+
 hanzi = pd.concat([
     yunmuDict.pivot(index='content', columns='class',
                     values='code').reset_index(),
@@ -229,6 +220,6 @@ hanzi = pd.concat([
                       values='code').reset_index(), hanzi
 ])
 
-hanzi.apply(lambda row: mongo.insert_one('toneShapeCode',
-                                         dict(zip(hanzi.columns, row.values))),
-            axis=1)
+hanzi.progress_apply(lambda row: mongo.insert_one(
+    'toneShapeCode', dict(zip(hanzi.columns, row.values))),
+                     axis=1)

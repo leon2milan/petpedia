@@ -119,10 +119,10 @@ class TSC:
         if int(strokes) > 35:
             res.append('Z')
         else:
-            res.append(self.strokesDict[int(strokes)])
+            res.append(self.strokesDict.get(int(strokes), '0'))
         return res
 
-    def getSSC(self, hanzi_sentence, encode_way):
+    def getSSC(self, hanzi_sentence, encode_way='ALL'):
         hanzi_sentence_ssc_list = []
         for one_chi_word in hanzi_sentence:
             ssc = self.hanziSSCDict.get(one_chi_word, None)
@@ -289,8 +289,26 @@ if __name__ == '__main__':
     tsc = TSC(cfg)
     import time
     s = time.time()
-    chi_word1 = '紫琅路'
-    chi_word2 = '国我爱你女生于无娃哇紫狼路爽晕约紫薇路又刘页列而紫粮路掩连哟罗'
+    # chi_word1 = '紫琅路'
+    # chi_word2 = '国我爱你女生于无娃哇紫狼路爽晕约紫薇路又刘页列而紫粮路掩连哟罗'
+
+    # chi_word1 = '呕吐'
+    # chi_word2 = '呕土不止'
+
+    # chi_word1 = '感冒'
+    # chi_word2 = '我家猫猫感帽了'
+
+    # chi_word1 = '咳嗽'
+    # chi_word2 = '一直咳数'
+
+    # chi_word1 = '没有精神'
+    # chi_word2 = '我家猫猫精神没有'
+    
+    chi_word1 = '擦洗'
+    chi_word2 = '我家狗拉啦稀了'
+
+    # chi_word1 = '尿血'
+    # chi_word2 = '狗狗偶尔尿xie怎么办'
     chi_word1_ssc = tsc.getSSC(chi_word1, 'ALL')
     print(chi_word1_ssc)
     print('encoding: {}'.format(time.time() - s))
@@ -300,7 +318,7 @@ if __name__ == '__main__':
     print('encoding: {}'.format(time.time() - s))
 
     #应用串的模式匹配KMP算法，找变异词。效率比BF算法高
-    kmp = VatiantKMP(0.8)
+    kmp = VatiantKMP(0.5)
     kmp.indexKMP(chi_word2_ssc, chi_word1_ssc, 'ALL', tsc.strokesDictReverse)  #主串S、模式串T
     print(kmp.startIdxRes)
     print('kmp: {}'.format(time.time() - s))

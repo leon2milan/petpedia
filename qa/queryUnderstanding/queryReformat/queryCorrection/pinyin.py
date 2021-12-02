@@ -10,6 +10,7 @@
 """
 import os
 import json
+from functools import reduce
 from collections import defaultdict, Counter
 from pypinyin import lazy_pinyin as pinyin
 from qa.queryUnderstanding.querySegmentation.words import Words
@@ -49,9 +50,10 @@ class Pinyin:
             import traceback
             print(traceback.print_exc())
             self.entity2py, self.py2entity, self.entity_trie = self.build(
-                flatten([v
-                         for k, v in Words(cfg).get_specializewords.items()]),
-                'entity_py')
+                flatten([
+                    v for k, v in reduce(lambda a, b: dict(a, **b),
+                                         Words(self.cfg).get_specializewords.values()).items()
+                ]), 'entity_py')
             self.all_word2py, self.all_py2word, self.all_py_trie = self.build([
                 k for k, v in Counter(
                     flatten([
@@ -72,7 +74,7 @@ class Pinyin:
                           "n").replace("zh",
                                        "z").replace("sh",
                                                     "s").replace("ch", "c")
-            x = x.replace("h", "f").replace("l", "n")
+            # x = x.replace("h", "f").replace("l", "n")
             s.append(x)
         return s
 
@@ -87,12 +89,12 @@ class Pinyin:
             py_trie.add_word(pinyin)
         py_trie.save(name)
         with open(
-                os.path.join(self.cfg.CORRECTION.PINYIN_PATH, name + '_word2py.json'),
-                'w') as f:
+                os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                             name + '_word2py.json'), 'w') as f:
             json.dump(word2py, f, ensure_ascii=False)
         with open(
-                os.path.join(self.cfg.CORRECTION.PINYIN_PATH, name + '_py2word.json'),
-                'w') as f:
+                os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                             name + '_py2word.json'), 'w') as f:
             json.dump(py2word, f, ensure_ascii=False)
         return word2py, py2word, py_trie
 

@@ -23,6 +23,7 @@ directories = [
     'models/correction',
     'models/intent/',
     'models/pretrained_model',
+    'models/onnx_models'
 ]
 for i in directories:
     path = os.path.join(ROOT, i)

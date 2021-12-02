@@ -3,12 +3,13 @@ from pymongo.mongo_client import _MongoClientErrorHandler
 from qa.tools import Singleton, setup_logger
 from config import get_cfg
 
-logger = setup_logger()
+logger = setup_logger(name='mongo')
 
 @Singleton
 class Mongo():
     def __init__(self, cfg, db=None) -> None:
         self.cfg = cfg
+        logger.info(f"connect to {self.cfg.BASE.ENVIRONMENT}")
         self.conn = MongoClient(
             f'mongodb://{self.cfg.MONGO.USER}:{self.cfg.MONGO.PWD}@{self.cfg.MONGO.HOST}:{self.cfg.MONGO.PORT}/{db}'
         )

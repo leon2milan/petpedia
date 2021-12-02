@@ -1,7 +1,14 @@
 import os
-import torch
 from .config import CfgNode as CN
 from config import ROOT
+from qa.tools.utils import get_host_ip
+
+
+ip = get_host_ip()
+env = 'product'
+if ip == '172.17.0.2':
+    ip = '10.2.0.55'
+    env = 'test'
 
 _C = CN()
 
@@ -15,6 +22,7 @@ _C.BASE.ROOT = ROOT
 _C.BASE.START_TOKEN = "<SOS>"
 _C.BASE.END_TOKEN = "<EOS>"
 _C.BASE.PAD_TOKEN = "<PAD>"
+_C.BASE.ENVIRONMENT = env
 
 _C.BASE.QA_COLLECTION = 'qa'
 _C.BASE.KNOWLEDGE_COLLECTION = 'DOG'
@@ -53,7 +61,7 @@ _C.BASE.KEY_LD_INDEX = 'LD'
 
 _C.WEB = CN()
 _C.WEB.PORT = 6400
-_C.WEB.HOST = '172.28.29.249'
+_C.WEB.HOST = ip
 _C.WEB.THREADS = 2
 _C.WEB.WORKER = 1
 _C.WEB.DAEMON = 'true'
@@ -64,23 +72,16 @@ _C.WEB.PID_FILE = os.path.join(ROOT, 'gunicorn/gunicorn.pid')
 _C.WEB.LOG_LEVEL = 'info'
 
 _C.MONGO = CN()
-_C.MONGO.HOST = '172.28.29.249'
+_C.MONGO.HOST = ip
 _C.MONGO.PORT = 27017
 _C.MONGO.USER = 'qa'
 _C.MONGO.PWD = 'ABCabc123'
 
 _C.ES = CN()
-_C.ES.HOST = '172.28.29.249'
+_C.ES.HOST = ip
 _C.ES.PORT = 9200
 _C.ES.USER = 'qa'
 _C.ES.PWD = 'ABCabc123'
-
-#################### deprecated ################
-_C.NEBULA = CN()
-_C.NEBULA.HOST = '172.28.29.249'
-_C.NEBULA.PORT = 9669
-_C.NEBULA.USER = 'root'
-_C.NEBULA.PWD = 'nebula'
 
 _C.DICTIONARY = CN()
 _C.DICTIONARY.PATH = os.path.join(ROOT, 'data/dictionary/')
@@ -151,7 +152,8 @@ _C.REPRESENTATION.SIMCSE.MAXLEN = 64
 _C.REPRESENTATION.SIMCSE.POOLING = 'cls'  # choose in ['cls', 'pooler', 'first-last-avg', 'last-avg']
 _C.REPRESENTATION.SIMCSE.DEVICE = 'cuda'  #['cuda', 'cpu']
 _C.REPRESENTATION.SIMCSE.TRAIN_DATA = _C.BASE.CHAR_FILE
-_C.REPRESENTATION.SIMCSE.EVAL_DATA = os.path.join(ROOT, "data/similarity/cnsd-sts-dev.txt")
+_C.REPRESENTATION.SIMCSE.EVAL_DATA = os.path.join(
+    ROOT, "data/similarity/cnsd-sts-dev.txt")
 # _C.REPRESENTATION.SIMCSE.TEST_DATA =
 
 # 预训练模型目录
@@ -165,7 +167,8 @@ else:
         x for x in os.listdir(os.path.join(ROOT, "../pretrained_model"))
         if _C.REPRESENTATION.PRE_TRAIN.MODE in x and 'word' not in x
     ][0]
-_C.REPRESENTATION.SIMCSE.PRETRAINED_MODEL = os.path.join(ROOT, "../pretrained_model", model)
+_C.REPRESENTATION.SIMCSE.PRETRAINED_MODEL = os.path.join(
+    ROOT, "../pretrained_model", model)
 
 # 微调后参数存放位置
 _C.REPRESENTATION.SIMCSE.SAVE_PATH = os.path.join(
@@ -244,3 +247,19 @@ _C.INTENT.MODEL_PATH = os.path.join(ROOT, 'models/intent/')
 # 匹配
 _C.MATCH = CN()
 _C.MATCH.METHODS = ['cosine', 'edit', 'jaccard']
+
+
+# deploy
+_C.DEPLOY = CN()
+_C.DEPLOY.SAVE_PATH = os.path.join(ROOT, 'models/onnx_models/')  # triton_models
+_C.DEPLOY.OUPUT = 'triton_models'
+_C.DEPLOY.BATCH_SIZE = [1, 32, 32]  # "batch sizes to optimize for (min, optimal, max)"
+_C.DEPLOY.SEQ_LEN = [16, 128, 128]  # sequence lengths to optimize for (min, opt, max)
+_C.DEPLOY.WORKSPACE_SIZE = 10000  # workspace size in MiB (TensorRT)
+_C.DEPLOY.VERBOSE = True
+_C.DEPLOY.BACKEND = ["onnx", "tensorrt", "pytorch"]  # backend to use. One of [onnx,tensorrt, pytorch] or all
+_C.DEPLOY.NB_INSTANCE = 1  # # of model instances, may improve troughput
+_C.DEPLOY.WARMUP = 100  # # of inferences to warm each model
+_C.DEPLOY.NB_MEASURES = 1000  # # of inferences for benchmarks
+_C.DEPLOY.SEED = 123
+_C.DEPLOY.ATOL = 1e-1  # tolerance when comparing outputs to Pytorch ones

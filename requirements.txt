@@ -17,7 +17,6 @@ sklearn
 gensim==3.8.1
 cyac
 beautifulsoup4
-nebula2-python==2.5.0
 pypinyin
 elasticsearch
 pycedar
@@ -28,3 +27,12 @@ pymongo
 gunicorn
 flask
 gevent
+onnx
+onnxruntime-gpu
+tritonclient[all]
+pycuda
+nvidia-pyindex
+nvidia-tensorrt
+onnx_graphsurgeon
+polygraphy
+triton-model-analyzer
