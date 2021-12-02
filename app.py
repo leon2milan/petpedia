@@ -49,6 +49,7 @@ def hot():
     hot_question = helper.hot_query()
     return jsonify({"hot_question": hot_question})
 
+
 @app.route('/spam_detect', methods=["POST"])
 def spam_detect():
     data = request.json
