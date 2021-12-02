@@ -40,5 +40,6 @@ FROM nvcr.io/nvidia/tritonserver:21.11-py3
 COPY . ./
 
 RUN pip install -U pip && \
+    pip install Cython && \
     pip install nvidia-pyindex && \
     pip install -e ".[GPU]" -f https://download.pytorch.org/whl/cu113/torch_stable.html --no-cache-dir

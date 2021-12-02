@@ -1,10 +1,11 @@
+Cython
 transformers
 fasttext
 dateutils
 cn2an
 torch
 joblib
-Cython
+cyac
 opencc
 emoji
 hnswlib
@@ -15,7 +16,6 @@ lac
 pandas
 sklearn
 gensim==3.8.1
-cyac
 beautifulsoup4
 pypinyin
 elasticsearch
