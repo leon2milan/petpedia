@@ -39,7 +39,15 @@ FROM nvcr.io/nvidia/tritonserver:21.11-py3
 # see .dockerignore to check what is transfered
 COPY . ./
 
+RUN git clone https://github.com/kpu/kenlm.git && \
+    cd kenlm && \
+    mkdir -p build  && \
+    cd build  && \
+    cmake ..  && \
+    make -j 4 && \
+    cd ../../
+
 RUN pip install -U pip && \
     pip install Cython && \
     pip install nvidia-pyindex && \
-    pip install -e ".[GPU]" -f https://download.pytorch.org/whl/cu113/torch_stable.html --no-cache-dir
+    pip install -e "." -f https://download.pytorch.org/whl/cu113/torch_stable.html

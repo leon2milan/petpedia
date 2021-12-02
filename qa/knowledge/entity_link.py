@@ -5,7 +5,7 @@ from qa.queryUnderstanding.queryReformat.queryNormalization.normalize import Nor
 from qa.tools.logger import setup_logger
 from config import get_cfg
 
-logger = setup_logger()
+logger = setup_logger(name='entity_linking')
 
 
 class EntityLink(object):
@@ -17,8 +17,11 @@ class EntityLink(object):
 
     def entity_recall(self, query):
         normalize = self.normalization.detect(query)
+        logger.debug(f"query: {query}, normalize: {normalize}")
         normalize = [self.normalization.get_name(x) for x in normalize]
+        logger.debug(f"query: {query}, normalize1: {normalize}")
         normalize = [(x, self.normalization.get_class(x)) for x in normalize if x]
+        logger.debug(f"query: {query}, normalize2: {normalize}")
         return normalize
 
     def extract_info(self):
@@ -27,13 +30,16 @@ class EntityLink(object):
     def entity_link(self, query):
         # candidate = self.knowledge_hnsw.search(self.seg(query, is_rough=True))
         extracted = self.entity_recall(query)
+        logger.debug(f"query: {query}, extracted: {extracted}")
         # candidate = [x if x['entity'] in extracted else x['score'] * 0.5 for x in candidate]
         # candidate = sorted(candidate, key=lambda x: x['score'])
-        disease = [x for x in extracted if self.normalization.is_disease(x)]
-        if disease:
+        disease = [x for x in extracted if self.normalization.is_disease(x[0])]
+        logger.debug(f"query: {query}, disease: {disease}")
+        if len(disease) > 0:
             return disease[0]
-        symptom = [x for x in extracted if self.normalization.is_symptom(x)]
-        if symptom:
+        symptom = [x for x in extracted if self.normalization.is_symptom(x[0])]
+        logger.debug(f"query: {query}, symptom: {symptom}")
+        if len(symptom) > 0:
             return symptom[0]
         return extracted[0] if extracted else ('', None)
 
