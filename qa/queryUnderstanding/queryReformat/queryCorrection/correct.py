@@ -43,7 +43,7 @@ class SpellCorrection(object):
         try:
             self.bigram.load()
         except:
-            text = [x.strip() for x in open(self.cfg.CHAR_FILE).readlines()]
+            text = [x.strip() for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()]
             bigram = BiGram(cfg)
             bigram.build(text)
             del text, bigram
