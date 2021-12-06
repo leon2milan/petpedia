@@ -385,7 +385,6 @@ class SpellCorrection(object):
             # TODO 使用分类模型
             # lm model ppl 变化情况
             score = err['err_score']
-            print('score1', score)
 
             kmp = VatiantKMP(0.5)
             kmp.indexKMP(query_ssc, self.tsc.getSSC(err['candidate'], 'ALL'),
@@ -397,7 +396,6 @@ class SpellCorrection(object):
             else:
                 continue
             score += self.get_score(" ".join(sentence)) - raw_score
-            print('score2', score)
             # 频次变化
             # score += self.bigram.uni_tf(candidate) - self.bigram.uni_tf(string)
             # 召回次数
@@ -405,13 +403,11 @@ class SpellCorrection(object):
             # 编辑距离
             score += len(text) - LexicalSimilarity.levenshteinDistance(
                 text, "".join(sentence))
-            print('score3', score)
 
             # jaccard 距离
             score += LexicalSimilarity.jaccard(
                 "".join(Pinyin.get_pinyin_list(text)),
                 "".join(Pinyin.get_pinyin_list("".join(sentence))))
-            print('score4', score)
 
             if score > max_score:
                 max_score = score
