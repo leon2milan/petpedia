@@ -1,4 +1,5 @@
 import gc
+import math
 import os
 import re
 import time
@@ -384,6 +385,7 @@ class SpellCorrection(object):
             # TODO 使用分类模型
             # lm model ppl 变化情况
             score = err['err_score']
+            print('score1', score)
 
             kmp = VatiantKMP(0.5)
             kmp.indexKMP(query_ssc, self.tsc.getSSC(err['candidate'], 'ALL'),
@@ -395,6 +397,7 @@ class SpellCorrection(object):
             else:
                 continue
             score += self.get_score(" ".join(sentence)) - raw_score
+            print('score2', score)
             # 频次变化
             # score += self.bigram.uni_tf(candidate) - self.bigram.uni_tf(string)
             # 召回次数
@@ -402,11 +405,13 @@ class SpellCorrection(object):
             # 编辑距离
             score += len(text) - LexicalSimilarity.levenshteinDistance(
                 text, "".join(sentence))
+            print('score3', score)
 
             # jaccard 距离
             score += LexicalSimilarity.jaccard(
                 "".join(Pinyin.get_pinyin_list(text)),
                 "".join(Pinyin.get_pinyin_list("".join(sentence))))
+            print('score4', score)
 
             if score > max_score:
                 max_score = score
@@ -421,7 +426,7 @@ class SpellCorrection(object):
         #         e_pos = (detail[0][2], detail[0][3])
         #         can = detail[0][1]
         #         max_score = 1.0
-        return (e_pos, can, max_score)
+        return (e_pos, can, 0.0 if math.isinf(max_score) else max_score)
 
 
 if __name__ == '__main__':
@@ -448,9 +453,9 @@ if __name__ == '__main__':
         start = time.time()
         e_pos, candidate, score = sc.correct(t)
         tt.append(time.time() - start)
-        print("raw {}, candidate {} vs: wrong {}, takes time : {}".format(
-            t, candidate, t[e_pos[0]:e_pos[1]],
-            time.time() - start))
+        print("raw {}, candidate {} vs: wrong {}, score: {}, takes time : {}".
+              format(t, candidate, t[e_pos[0]:e_pos[1]], score,
+                     time.time() - start))
         # start = time.time()
         # corrected_sent, detail = pycorrector.correct(t)
         # print(corrected_sent, detail)
