@@ -7,6 +7,7 @@ from qa.main import Search
 from qa.intent import Fasttest
 from qa.knowledge import EntityLink
 from qa.search import SearchHelper
+from qa.queryUnderstanding.queryReformat.queryCorrection.correct import SpellCorrection
 
 logger = setup_logger()
 cfg = get_cfg()
@@ -15,6 +16,7 @@ intent = Fasttest(cfg, 'two_intent')
 searchObj = Search(cfg)
 el = EntityLink(cfg)
 helper = SearchHelper(cfg)
+sc = SpellCorrection(cfg)
 
 app = Flask(__name__)
 
@@ -56,6 +58,14 @@ def spam_detect():
     query = data['query']
     flag, sensetive_words = helper.sensetive_detect(query)
     return jsonify({"flag": flag, "sensetive_words": sensetive_words})
+
+
+@app.route('/spell_correct', methods=["POST"])
+def spell_correct():
+    data = request.json
+    query = data['query']
+    e_pos, can, max_score = sc.correct(query)
+    return jsonify({"error_pos": e_pos, "candidate": can, 'error_score': max_score})
 
 
 if __name__ == '__main__':

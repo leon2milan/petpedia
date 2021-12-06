@@ -28,7 +28,7 @@ TODO: NEED to run again
 
 2.  TODO: use char word2vec-cbow model to detect whether two question is similarity is better.
 
-3.  run `qa/queryUnderstanding/queryReformat/queryCorrection/correct.py` to generate correct model. 
+3.  run `qa/queryUnderstanding/queryReformat/queryCorrection/correct.py` to generate correct model.  This code contains pycorrect, so you need run it to install model before start service.
 
 4.  TODO: manual retrieval, maybe support `!`, `|`, `&` search language
 

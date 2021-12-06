@@ -1,5 +1,5 @@
-from typing import List, OrderedDict, Tuple
-
+from typing import List, Tuple
+from collections import OrderedDict
 import numpy as np
 import pycuda.driver as cuda
 import tensorrt as trt
@@ -191,7 +191,7 @@ def load_engine(runtime: Runtime, engine_file_path: str) -> ICudaEngine:
 
 def infer_tensorrt(
     context: IExecutionContext,
-    host_inputs: OrderedDict[str, np.ndarray],
+    host_inputs: 'OrderedDict[str, np.ndarray]',
     input_binding_idxs: List[int],
     output_binding_idxs: List[int],
     stream: Stream,

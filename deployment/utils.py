@@ -1,8 +1,11 @@
 import logging
-from contextlib import contextmanager
 import time
-from typing import List
+from collections import OrderedDict
+from contextlib import contextmanager
+from typing import Dict, List, Tuple
+
 import numpy as np
+import torch
 
 
 def print_timings(name: str, timings: List[float]):
@@ -34,3 +37,26 @@ def track_infer_time(buffer: [int]):
     yield
     end = time.perf_counter()
     buffer.append(end - start)
+
+
+def prepare_input(
+    seq_len: int, batch_size: int, include_token_ids: bool
+) -> Tuple[Dict[str, torch.Tensor], Dict[str, np.ndarray]]:
+    shape = (batch_size, seq_len)
+    inputs_pytorch: OrderedDict[str, torch.Tensor] = OrderedDict()
+    inputs_pytorch["input_ids"] = torch.randint(high=100,
+                                                size=shape,
+                                                dtype=torch.long,
+                                                device="cuda")
+    if include_token_ids:
+        inputs_pytorch["token_type_ids"] = torch.ones(size=shape,
+                                                      dtype=torch.long,
+                                                      device="cuda")
+    inputs_pytorch["attention_mask"] = torch.ones(size=shape,
+                                                  dtype=torch.long,
+                                                  device="cuda")
+    inputs_onnx: Dict[str, np.ndarray] = {
+        k: np.ascontiguousarray(v.detach().cpu().numpy())
+        for k, v in inputs_pytorch.items()
+    }
+    return inputs_pytorch, inputs_onnx

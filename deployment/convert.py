@@ -24,24 +24,23 @@ import numpy as np
 import pycuda.autoinit
 import tensorrt as trt
 import torch
+from config import get_cfg
 from pycuda._driver import Stream
+from qa.tools import setup_logger
 from tensorrt.tensorrt import IExecutionContext, Logger, Runtime
 from torch.cuda import get_device_name
 from torch.cuda.amp import autocast
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
+                          PreTrainedModel, PreTrainedTokenizer)
 
-from deployment.backends.ort_utils import convert_to_onnx, create_model_for_provider, optimize_onnx
-from deployment.backends.trt_utils import (
-    build_engine,
-    get_binding_idxs,
-    infer_tensorrt,
-    load_engine,
-    save_engine,
-)
-from deployment.utils import prepare_input, print_timings, track_infer_time
+from deployment.backends.ort_utils import (convert_to_onnx,
+                                           create_model_for_provider,
+                                           optimize_onnx)
+from deployment.backends.trt_utils import (build_engine, get_binding_idxs,
+                                           infer_tensorrt, load_engine,
+                                           save_engine)
 from deployment.triton import Configuration, ModelType
-from qa.tools import setup_logger
-from config import get_cfg
+from deployment.utils import prepare_input, print_timings, track_infer_time
 
 logger = setup_logger()
 
@@ -51,7 +50,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="optimize and deploy transformers",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-m", "--model", required=True, help="path to model or URL to Hugging Face Hub")
+    parser.add_argument("-m",
+                        "--model",
+                        required=True,
+                        help="path to model or URL to Hugging Face Hub")
     parser.add_argument("-n",
                         "--name",
                         default="transformer",
@@ -77,10 +79,8 @@ def main():
     torch.manual_seed(cfg.DEPLOY.SEED)
 
     Path(cfg.DEPLOY.OUPUT).mkdir(parents=True, exist_ok=True)
-    onnx_model_path = os.path.join(cfg.DEPLOY.OUPUT, 
-                                   "model-original.onnx")
-    onnx_optim_fp16_path = os.path.join(cfg.DEPLOY.OUPUT, 
-                                        "model.onnx")
+    onnx_model_path = os.path.join(cfg.DEPLOY.OUPUT, "model-original.onnx")
+    onnx_optim_fp16_path = os.path.join(cfg.DEPLOY.OUPUT, "model.onnx")
     tensorrt_path = os.path.join(cfg.DEPLOY.OUPUT, "model.plan")
 
     assert torch.cuda.is_available(
@@ -152,11 +152,12 @@ def main():
             output_binding_idxs=output_binding_idxs,
             stream=stream,
         )
-        assert np.allclose(a=tensorrt_output, b=output_pytorch,
-                           atol=cfg.DEPLOY.ATOL), (f"tensorrt accuracy is too low:\n"
-                                             f"Pythorch:\n{output_pytorch}\n"
-                                             f"VS\n"
-                                             f"TensorRT:\n{tensorrt_output}")
+        assert np.allclose(
+            a=tensorrt_output, b=output_pytorch,
+            atol=cfg.DEPLOY.ATOL), (f"tensorrt accuracy is too low:\n"
+                                    f"Pythorch:\n{output_pytorch}\n"
+                                    f"VS\n"
+                                    f"TensorRT:\n{tensorrt_output}")
 
         for _ in range(cfg.DEPLOY.WARMUP):
             _ = infer_tensorrt(

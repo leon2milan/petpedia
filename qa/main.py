@@ -21,13 +21,14 @@ class Search(object):
 
 
 if __name__ == "__main__":
+    import json
     cfg = get_cfg()
     searchObj = Search(cfg)
     start = time.time()
-    # res = searchObj.search('哈士奇老拆家怎么办')
-    # res = searchObj.search('犬瘟热')
-    # res = searchObj.search('狗发烧')
-    res = searchObj.search('金毛')
-    print('result', res[0])
-    # print([(x['docid'], x['score']) for x in res])
-    logger.info('search takes time: {}'.format((time.time() - start) / 60))
+    test = ['哈士奇老拆家怎么办', '犬瘟热', '狗发烧', '金毛', '拉布拉多不吃东西怎么办']
+    for i in test: 
+        res = searchObj.search(i)
+        logger.info('search takes time: {}'.format((time.time() - start) / 60))
+        print([(x['doc']['question'], x['score']) for x in res])
+        json.loads(json.dumps({"result": res}))
+        

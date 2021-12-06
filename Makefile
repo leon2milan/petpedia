@@ -20,11 +20,3 @@ clean:
 
 run:
 	bash ./start.sh
-
-.PHONY: build_docker
-build_docker:
-	docker build \
-	--rm \
-	-t ghcr.io/els-rd/transformer-deploy:latest \
-	-t ghcr.io/els-rd/transformer-deploy:0.1.1 \
-	-f Dockerfile .

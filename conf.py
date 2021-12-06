@@ -14,6 +14,8 @@ workers = cfg.WEB.WORKER
 # 指定每个进程开启的线程数
 threads = cfg.WEB.THREADS
 
+timeout=120
+
 # 监听端口
 bind = f'{cfg.WEB.HOST}:{cfg.WEB.PORT}'
 

@@ -1,5 +1,6 @@
 from qa.matching.lexical import LexicalSimilarity
 from qa.matching.semantic import SemanticSimilarity
+from qa.matching.semantic.simCSE import SIMCSE
 from qa.tools import setup_logger
 from qa.matching import Matching
 from config import get_cfg
@@ -13,8 +14,16 @@ class Similarity(Matching):
         self.cfg = cfg
         self.ls = LexicalSimilarity(cfg)
         self.ss = SemanticSimilarity(cfg)
+        self.simcse = SIMCSE(cfg)
 
     def get_score_many(self, query, candidate_list):
+        if self.cfg.MATCH.METHODS == ['simcse']:
+            if isinstance(candidate_list, list):
+                return self.simcse.query_sim(query, candidate_list)
+            elif isinstance(candidate_list, str):
+                return self.simcse.similarity(query, candidate_list)
+            else:
+                raise TypeError(f"simCSE does not support {type(candidate_list)}")
         query_list = self.seg.cut(query)
         candidate_cut_list = self.seg.cut(candidate_list)
         res = []
@@ -37,6 +46,8 @@ class Similarity(Matching):
                 score += self.ls.get_score(s1, s2, 'edit')
             elif method == 'cosine':
                 score += self.ss.get_score(s1_list, s2_list, 'cosine')
+            elif method == 'simcse':
+                score += self.simcse.similarity(s1, s2)
             else:
                 logger.warning(
                     'We do not know the similarity method of {}. Please contact the developper.'

@@ -1,6 +1,5 @@
 import multiprocessing
 from collections import OrderedDict
-from typing import OrderedDict as OD
 
 import torch
 from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions
@@ -10,6 +9,7 @@ from onnxruntime.transformers.onnx_model_bert import BertOnnxModel
 from torch.onnx import TrainingMode
 from transformers import PreTrainedModel
 from qa.tools import setup_logger
+
 logger = setup_logger()
 
 
@@ -26,7 +26,7 @@ def create_model_for_provider(path: str,
 
 
 def convert_to_onnx(model_pytorch: PreTrainedModel, output_path: str,
-                    inputs_pytorch: OD[str, torch.Tensor]) -> None:
+                    inputs_pytorch: 'OrderedDict[str, torch.Tensor]') -> None:
     # dynamic axis == variable length axis
     dynamic_axis = OrderedDict()
     for k in inputs_pytorch.keys():

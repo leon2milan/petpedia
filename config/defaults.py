@@ -3,11 +3,9 @@ from .config import CfgNode as CN
 from config import ROOT
 from qa.tools.utils import get_host_ip
 
-
 ip = get_host_ip()
 env = 'product'
-if ip == '172.17.0.2':
-    ip = '10.2.0.55'
+if ip == '10.2.0.55':
     env = 'test'
 
 _C = CN()
@@ -62,14 +60,14 @@ _C.BASE.KEY_LD_INDEX = 'LD'
 _C.WEB = CN()
 _C.WEB.PORT = 6400
 _C.WEB.HOST = ip
-_C.WEB.THREADS = 2
-_C.WEB.WORKER = 1
+_C.WEB.THREADS = 3
+_C.WEB.WORKER = 3
 _C.WEB.DAEMON = 'true'
 _C.WEB.WORK_CLASS = 'gevent'  # [sync, eventlet, gevent, tornado, gthread, gaiohttp]
 _C.WEB.LOG = os.path.join(ROOT, 'logs/info.log')
 _C.WEB.ERROR_LOG = os.path.join(ROOT, 'logs/error.log')
 _C.WEB.PID_FILE = os.path.join(ROOT, 'gunicorn/gunicorn.pid')
-_C.WEB.LOG_LEVEL = 'info'
+_C.WEB.LOG_LEVEL = 'debug'
 
 _C.MONGO = CN()
 _C.MONGO.HOST = ip
@@ -82,6 +80,10 @@ _C.ES.HOST = ip
 _C.ES.PORT = 9200
 _C.ES.USER = 'qa'
 _C.ES.PWD = 'ABCabc123'
+
+_C.TRITON = CN()
+_C.TRITON.HOST = ip
+_C.TRITON.PORT = 8000
 
 _C.DICTIONARY = CN()
 _C.DICTIONARY.PATH = os.path.join(ROOT, 'data/dictionary/')
@@ -172,8 +174,7 @@ _C.REPRESENTATION.SIMCSE.PRETRAINED_MODEL = os.path.join(
 
 # 微调后参数存放位置
 _C.REPRESENTATION.SIMCSE.SAVE_PATH = os.path.join(
-    ROOT,
-    'models/representation/simcse_{}.pt'.format(_C.REPRESENTATION.SIMCSE.TYPE))
+    ROOT, f"models/representation/simcse_{_C.REPRESENTATION.SIMCSE.TYPE}.pt")
 
 # 同义词挖掘
 _C.SYNONYM = CN()
@@ -246,18 +247,22 @@ _C.INTENT.MODEL_PATH = os.path.join(ROOT, 'models/intent/')
 
 # 匹配
 _C.MATCH = CN()
-_C.MATCH.METHODS = ['cosine', 'edit', 'jaccard']
-
+_C.MATCH.METHODS = ['simcse']  # one of ['cosine', 'edit', 'jaccard', 'simcse] or all
 
 # deploy
 _C.DEPLOY = CN()
-_C.DEPLOY.SAVE_PATH = os.path.join(ROOT, 'models/onnx_models/')  # triton_models
+_C.DEPLOY.SAVE_PATH = os.path.join(ROOT,
+                                   'models/onnx_models/')  # triton_models
 _C.DEPLOY.OUPUT = 'triton_models'
-_C.DEPLOY.BATCH_SIZE = [1, 32, 32]  # "batch sizes to optimize for (min, optimal, max)"
-_C.DEPLOY.SEQ_LEN = [16, 128, 128]  # sequence lengths to optimize for (min, opt, max)
+_C.DEPLOY.BATCH_SIZE = [1, 32, 32
+                        ]  # "batch sizes to optimize for (min, optimal, max)"
+_C.DEPLOY.SEQ_LEN = [16, 128,
+                     128]  # sequence lengths to optimize for (min, opt, max)
 _C.DEPLOY.WORKSPACE_SIZE = 10000  # workspace size in MiB (TensorRT)
 _C.DEPLOY.VERBOSE = True
-_C.DEPLOY.BACKEND = ["onnx", "tensorrt", "pytorch"]  # backend to use. One of [onnx,tensorrt, pytorch] or all
+_C.DEPLOY.BACKEND = [
+    "onnx", "tensorrt", "pytorch"
+]  # backend to use. One of [onnx,tensorrt, pytorch] or all
 _C.DEPLOY.NB_INSTANCE = 1  # # of model instances, may improve troughput
 _C.DEPLOY.WARMUP = 100  # # of inferences to warm each model
 _C.DEPLOY.NB_MEASURES = 1000  # # of inferences for benchmarks

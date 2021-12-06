@@ -3,7 +3,7 @@ import multiprocessing
 import os
 from pathlib import Path
 from typing import Dict, List, Tuple
-
+import argparse
 import numpy as np
 import torch
 from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions
@@ -20,6 +20,8 @@ from transformers import (
     PreTrainedTokenizer,
     TensorType,
 )
+
+import onnx
 from transformers.file_utils import PaddingStrategy
 from transformers.tokenization_utils_base import BatchEncoding, TruncationStrategy
 
@@ -49,7 +51,7 @@ def tokenize(dummy_text: List[str], tokenizer: PreTrainedTokenizer,
         max_length=16,
         padding=PaddingStrategy.LONGEST,
         pad_to_multiple_of=8,
-        return_token_type_ids=False,
+        return_token_type_ids=True,
         return_attention_mask=True,
         return_overflowing_tokens=False,
         return_special_tokens_mask=False,
@@ -80,15 +82,16 @@ def convert_to_onnx(model_pytorch: PreTrainedModel, output_path: str,
     with torch.no_grad():
         torch.onnx.export(
             model_pytorch,  # model to optimize
-            args=(inputs_pytorch["input_ids"], inputs_pytorch["attention_mask"]),  # tuple of multiple inputs
+            args=(inputs_pytorch["input_ids"], inputs_pytorch["attention_mask"], inputs_pytorch["token_type_ids"]),  # tuple of multiple inputs
             f=output_path,  # output path / file object
             opset_version=12,  # the ONNX version to use
             do_constant_folding=True,  # simplify model (replace constant expressions)
-            input_names=["input_ids", "attention_mask"],  # input names
+            input_names=["input_ids", "attention_mask", "token_type_ids"],  # input names
             output_names=["model_output"],  # output name
             dynamic_axes={  # declare dynamix axis for each input / output (dynamic axis == variable length axis)
                 "input_ids": {0: "batch_size", 1: "sequence"},
                 "attention_mask": {0: "batch_size", 1: "sequence"},
+                "token_type_ids": {0: "batch_size", 1: "sequence"},
                 "model_output": {0: "batch_size"},
             },
             verbose=False,
@@ -116,115 +119,126 @@ def optimize_onnx(onnx_path: str, onnx_optim_fp16_path: str,
     optimized_model.save_model_to_file(onnx_optim_fp16_path)
 
 
-for deply_model in cfg.DEPLOY.ONNX_MODELS_PATH:
-    model_name = os.path.basename(deply_model).split('.')[0]
-    huggingface_hub_path = deply_model
-    onnx_folder = os.path.join(cfg.DEPLOY.ONNX_MODEL_PATH, model_name)
-    Path(onnx_folder).mkdir(parents=True, exist_ok=True)
+parser = argparse.ArgumentParser(
+    description="optimize and deploy transformers",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-m",
+                    "--model",
+                    required=True,
+                    help="path to model or URL to Hugging Face Hub")
+parser.add_argument("-n",
+                    "--name",
+                    default="transformer",
+                    help="model name to be used in triton server")
 
-    onnx_model_path = os.path.join(onnx_folder, "model.onnx")
-    infered_shape_model_onnx_path = os.path.join(onnx_folder,
-                                                 "model-shape.onnx")
-    onnx_optim_fp16_path_path = os.path.join(onnx_folder,
-                                             "model-optimized.onnx")
-    input_text = "狗狗偶尔尿血怎么办"
-    setup_logging()
+args, _ = parser.parse_known_args()
 
-    from qa.matching.semantic.simCSE.unsup import SimcseModel
-    model_pytorch = SimcseModel(cfg)
-    assert torch.cuda.is_available()
-    model_pytorch.cuda()
-    model_pytorch.eval()
+model_name = args.name
+huggingface_hub_path = args.model
+onnx_folder = os.path.join(cfg.DEPLOY.SAVE_PATH, model_name)
+Path(onnx_folder).mkdir(parents=True, exist_ok=True)
 
-    tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
-        cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL)
+onnx_model_path = os.path.join(onnx_folder, "model.onnx")
+infered_shape_model_onnx_path = os.path.join(onnx_folder, "model-shape.onnx")
+onnx_optim_fp16_path_path = os.path.join(onnx_folder, "model-optimized.onnx")
+input_text = "狗狗偶尔尿血怎么办"
+setup_logging()
 
-    inputs_pytorch, inputs_onnx = prepare_input(dummy_text=input_text,
-                                                tokenizer=tokenizer)
+from qa.matching.semantic.simCSE.unsup import SimcseModel
 
-    with torch.no_grad():
-        output = model_pytorch(**inputs_pytorch)
-        # output = output.logits  # extract the value of interest
-        output_pytorch: np.ndarray = output.detach().cpu().numpy()
+model_pytorch = SimcseModel(cfg)
+assert torch.cuda.is_available()
+model_pytorch.cuda()
+model_pytorch.eval()
 
-    logging.info(f"[Pytorch] input shape {inputs_pytorch['input_ids'].shape}")
-    logging.info(f"[Pytorch] output shape: {output_pytorch.shape}")
-    # create onnx model and compare results
-    convert_to_onnx(model_pytorch=model_pytorch,
-                    output_path=onnx_model_path,
-                    inputs_pytorch=inputs_pytorch)
-    onnx_model = create_model_for_provider(
-        path=onnx_model_path, provider_to_use="CPUExecutionProvider")
-    output_onnx = onnx_model.run(None, inputs_onnx)
-    del onnx_model
-    # del model_pytorch
-    assert np.allclose(a=output_onnx, b=output_pytorch, atol=1e-1)
-    # import after onnxruntime
-    import onnx
+tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(args.model)
 
-    onnx.save(
-        SymbolicShapeInference.infer_shapes(onnx.load(onnx_model_path),
-                                            auto_merge=True),
-        infered_shape_model_onnx_path)
+inputs_pytorch, inputs_onnx = prepare_input(dummy_text=input_text,
+                                            tokenizer=tokenizer)
 
-    # create optimized onnx model and compare results
-    optimize_onnx(
-        onnx_path=onnx_model_path,
-        onnx_optim_fp16_path=onnx_optim_fp16_path_path,
-        use_cuda=True,
-    )
-    onnx_model = create_model_for_provider(
-        path=onnx_optim_fp16_path_path, provider_to_use="CPUExecutionProvider")
-    # run the model (None = get all the outputs)
-    output_onnx_optimised = onnx_model.run(None, inputs_onnx)
-    del onnx_model
-    assert np.allclose(a=output_onnx_optimised, b=output_pytorch, atol=1e-1)
-    assert np.allclose(a=output_onnx_optimised, b=output_onnx, atol=1e-1)
+with torch.no_grad():
+    output = model_pytorch(inputs_pytorch["input_ids"],
+                           inputs_pytorch["attention_mask"],
+                           inputs_pytorch["token_type_ids"])
+    # output = output.logits  # extract the value of interest
+    output_pytorch: np.ndarray = output.detach().cpu().numpy()
 
-    os.environ["ORT_TENSORRT_FP16_ENABLE"] = "1"
-    os.environ["ORT_TENSORRT_MAX_WORKSPACE_SIZE"] = f"{3 * 1024 * 1024 * 1024}"
-    # os.environ['ORT_TENSORRT_ENGINE_CACHE_ENABLE'] = '1'
+logging.info(f"[Pytorch] input shape {inputs_pytorch['input_ids'].shape}")
+logging.info(f"[Pytorch] output shape: {output_pytorch.shape}")
+# create onnx model and compare results
+convert_to_onnx(model_pytorch=model_pytorch,
+                output_path=onnx_model_path,
+                inputs_pytorch=inputs_pytorch)
+onnx_model = create_model_for_provider(path=onnx_model_path,
+                                       provider_to_use="CPUExecutionProvider")
+output_onnx = onnx_model.run(None, inputs_onnx)
+del onnx_model
+# del model_pytorch
+assert np.allclose(a=output_onnx, b=output_pytorch, atol=1e-1)
 
-    providers = [
-        ("TensorrtExecutionProvider", infered_shape_model_onnx_path),
-        ("CUDAExecutionProvider", onnx_model_path),
-        ("CUDAExecutionProvider", onnx_optim_fp16_path_path),
-    ]
+onnx.save(
+    SymbolicShapeInference.infer_shapes(onnx.load(onnx_model_path),
+                                        auto_merge=True),
+    infered_shape_model_onnx_path)
 
-    warm_up = 100
-    nb_benchmark = 1000
-    results = {}
-    for provider, model_path in providers:
-        model = create_model_for_provider(path=model_path,
-                                          provider_to_use=provider)
-        time_buffer = []
-        for _ in range(warm_up):
-            model.run(None, inputs_onnx)
-        for _ in range(nb_benchmark):
-            with track_infer_time(time_buffer):
-                model.run(None, inputs_onnx)
-        results[f"[{provider}] {model_path}"] = time_buffer
-    del model
+# create optimized onnx model and compare results
+optimize_onnx(
+    onnx_path=onnx_model_path,
+    onnx_optim_fp16_path=onnx_optim_fp16_path_path,
+    use_cuda=True,
+)
+onnx_model = create_model_for_provider(path=onnx_optim_fp16_path_path,
+                                       provider_to_use="CPUExecutionProvider")
+# run the model (None = get all the outputs)
+output_onnx_optimised = onnx_model.run(None, inputs_onnx)
+del onnx_model
+assert np.allclose(a=output_onnx_optimised, b=output_pytorch, atol=1e-1)
+assert np.allclose(a=output_onnx_optimised, b=output_onnx, atol=1e-1)
 
-    # Add PyTorch to the providers
+os.environ["ORT_TENSORRT_FP16_ENABLE"] = "1"
+os.environ["ORT_TENSORRT_MAX_WORKSPACE_SIZE"] = f"{3 * 1024 * 1024 * 1024}"
+# os.environ['ORT_TENSORRT_ENGINE_CACHE_ENABLE'] = '1'
+
+providers = [
+    ("TensorrtExecutionProvider", infered_shape_model_onnx_path),
+    ("CUDAExecutionProvider", onnx_model_path),
+    ("CUDAExecutionProvider", onnx_optim_fp16_path_path),
+]
+
+warm_up = 100
+nb_benchmark = 1000
+results = {}
+for provider, model_path in providers:
+    model = create_model_for_provider(path=model_path,
+                                      provider_to_use=provider)
+    time_buffer = []
     for _ in range(warm_up):
-        res = model_pytorch(**inputs_pytorch)
+        model.run(None, inputs_onnx)
+    for _ in range(nb_benchmark):
+        with track_infer_time(time_buffer):
+            model.run(None, inputs_onnx)
+    results[f"[{provider}] {model_path}"] = time_buffer
+del model
+
+# Add PyTorch to the providers
+for _ in range(warm_up):
+    res = model_pytorch(**inputs_pytorch)
+time_buffer = []
+for _ in range(nb_benchmark):
+    with track_infer_time(time_buffer):
+        model_pytorch(**inputs_pytorch)
+results["Pytorch_fp32"] = time_buffer
+
+with autocast():
+    for _ in range(warm_up):
+        model_pytorch(**inputs_pytorch)
     time_buffer = []
     for _ in range(nb_benchmark):
         with track_infer_time(time_buffer):
             model_pytorch(**inputs_pytorch)
-    results["Pytorch_fp32"] = time_buffer
+    results["Pytorch_fp16"] = time_buffer
 
-    with autocast():
-        for _ in range(warm_up):
-            model_pytorch(**inputs_pytorch)
-        time_buffer = []
-        for _ in range(nb_benchmark):
-            with track_infer_time(time_buffer):
-                model_pytorch(**inputs_pytorch)
-        results["Pytorch_fp16"] = time_buffer
+logging.info(f"inference done on {get_device_name(0)}")
 
-    logging.info(f"inference done on {get_device_name(0)}")
-
-    for name, time_buffer in results.items():
-        print_timings(name=name, timings=time_buffer)
+for name, time_buffer in results.items():
+    print_timings(name=name, timings=time_buffer)

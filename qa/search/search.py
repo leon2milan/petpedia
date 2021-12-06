@@ -4,7 +4,6 @@ import re
 from config import get_cfg
 from qa.queryUnderstanding.preprocess.preprocess import clean
 from qa.queryUnderstanding.queryReformat.queryNormalization import Normalization
-from qa.queryUnderstanding.queryReformat.queryCorrection.correct import SpellCorrection
 from qa.retrieval.retrieval import BasicSearch
 from qa.tools import setup_logger
 from qa.tools.utils import flatten
