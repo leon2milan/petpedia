@@ -37,6 +37,7 @@ class SpellCorrection(object):
         self.init()
 
     def init(self):
+        # TODO: Pinyin trie tree use small data. Not 28W data.
         self.py = Pinyin(self.cfg)
         self.bigram = BiGram(self.cfg)
         self.tsc = TSC(self.cfg)
@@ -360,10 +361,10 @@ class SpellCorrection(object):
                     max_score = uni_score
                     can = x
             return ((0, len(text)), can, max_score)
-        # pinyin匹配
-        candidates = self.py.pinyin_candidate(text, 0)
+        # entity pinyin匹配
+        candidates = self.py.pinyin_candidate(text, 0, method='entity')
         if candidates:
-            return ((0, len(text)), candidates, 1.0)
+            return ((0, len(text)), "".join(candidates), 1.0)
         text_list = self.seg.cut(text, is_rough=True)
         # text_list = list(text)
         logger.debug('text_list: {}'.format(text_list))
@@ -442,7 +443,9 @@ if __name__ == '__main__':
         '呕土不止',
         '一直咳数',
         '我想找哥医生',
-        "哈士奇老拆家怎么办"
+        "哈士奇老拆家怎么办",
+        "狗狗发烧怎么办",
+        "犬瘟热"
     ]
     tt = []
     for t in text:

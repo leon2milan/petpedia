@@ -17,7 +17,10 @@ class TSC:
         self.yunmuDict = tsc['yunmu_encode']
         self.shapeDict = tsc['structure_map']
         self.strokesDict = tsc['stroke_map']
-        self.strokesDictReverse = {v: int(k) for k, v in self.strokesDict.items()}
+        self.strokesDictReverse = {
+            v: int(k)
+            for k, v in self.strokesDict.items()
+        }
         self.hanziStructureDict = tsc['han_structure']
         self.hanziStrokesDict = tsc['stroke']
         self.hanziSSCDict = tsc['tsc_map']
@@ -303,12 +306,13 @@ if __name__ == '__main__':
 
     # chi_word1 = '没有精神'
     # chi_word2 = '我家猫猫精神没有'
-    
+
     chi_word1 = '擦洗'
     chi_word2 = '我家狗拉啦稀了'
 
     # chi_word1 = '尿血'
     # chi_word2 = '狗狗偶尔尿xie怎么办'
+
     chi_word1_ssc = tsc.getSSC(chi_word1, 'ALL')
     print(chi_word1_ssc)
     print('encoding: {}'.format(time.time() - s))
@@ -319,7 +323,8 @@ if __name__ == '__main__':
 
     #应用串的模式匹配KMP算法，找变异词。效率比BF算法高
     kmp = VatiantKMP(0.5)
-    kmp.indexKMP(chi_word2_ssc, chi_word1_ssc, 'ALL', tsc.strokesDictReverse)  #主串S、模式串T
+    kmp.indexKMP(chi_word2_ssc, chi_word1_ssc, 'ALL',
+                 tsc.strokesDictReverse)  #主串S、模式串T
     print(kmp.startIdxRes)
     print('kmp: {}'.format(time.time() - s))
 
@@ -329,3 +334,4 @@ if __name__ == '__main__':
     print('变异词：', variabt_word)
 
     print('all: {}'.format(time.time() - s))
+

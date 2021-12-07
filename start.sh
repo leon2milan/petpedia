@@ -4,6 +4,7 @@ if [ ! -z "$already_run" ]; then
     echo $already_run
     killall -9 "$already_run"
 fi
+pkill gunicorn 
 
 sleep 5 &
 wait $!

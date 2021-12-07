@@ -9,7 +9,7 @@ from qa.knowledge import EntityLink
 from qa.search import SearchHelper
 from qa.queryUnderstanding.queryReformat.queryCorrection.correct import SpellCorrection
 
-logger = setup_logger()
+logger = setup_logger(name='APP')
 cfg = get_cfg()
 
 intent = Fasttest(cfg, 'two_intent')
@@ -17,6 +17,8 @@ searchObj = Search(cfg)
 el = EntityLink(cfg)
 helper = SearchHelper(cfg)
 sc = SpellCorrection(cfg)
+
+logger.info("Success load model!!!")
 
 app = Flask(__name__)
 
