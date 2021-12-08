@@ -93,11 +93,10 @@ class Fasttest(object):
         # print("R@2:", result.recall)  #召回率
         # print("Number of examples:", result.nexamples)  #预测错的例子
 
-    def predict(self, text_list):
-        text_list = [" ".join(x) for x in self.seg.cut(text_list)]
-        lable, probs = self.classifier.predict(text_list)
-        return [INTENT_MAP[x[0]]
-                for x in lable][0], [x.tolist()[0] for x in probs][0]
+    def predict(self, text):
+        text = " ".join(self.seg.cut(text))
+        lable, probs = self.classifier.predict(text)
+        return INTENT_MAP[lable[0]], probs[0]
 
 
 if __name__ == '__main__':
