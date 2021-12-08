@@ -7,6 +7,8 @@ import os
 import re
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 
+from qa.knowledge import EntityLink
+
 INTENT_MAP = {'__lable__1': "pet_qa", "__lable__0": "chitchat"}
 
 
@@ -17,6 +19,7 @@ class Fasttest(object):
         self.seg = Segmentation(self.cfg)
         self.stopwords = Words(self.cfg).get_stopwords
         self.specialize = Words(cfg).get_specializewords
+        self.el = EntityLink(cfg)
         model = model if model and model is not None else 'intent'
         if model is None or not os.path.exists(
                 os.path.join(self.cfg.INTENT.MODEL_PATH,
@@ -94,6 +97,9 @@ class Fasttest(object):
         # print("Number of examples:", result.nexamples)  #预测错的例子
 
     def predict(self, text):
+        entity, type = self.el.entity_link(text)
+        if entity:
+            return "pet_qa", 1.0
         text = " ".join(self.seg.cut(text))
         lable, probs = self.classifier.predict(text)
         return INTENT_MAP[lable[0]], probs[0]
@@ -103,7 +109,7 @@ if __name__ == '__main__':
     cfg = get_cfg()
     intent = Fasttest(cfg, 'two_intent')
 
-    text = ["拉布拉多不吃东西怎么办", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒"]
+    text = ["拉布拉多不吃东西怎么办", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛']
 
     for x in text:
         print(intent.predict(x))

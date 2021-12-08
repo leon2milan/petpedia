@@ -25,6 +25,7 @@ directories = [
     'models/retrieval',
     'models/correction',
     'models/intent/',
+    'models/gpt/',
     'models/pretrained_model',
     'models/onnx_models'
 ]

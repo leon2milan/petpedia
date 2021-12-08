@@ -4,10 +4,11 @@ from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.queryUnderstanding.queryReformat.queryNormalization.normalize import Normalization
 from qa.tools.logger import setup_logger
 from config import get_cfg
+from qa.tools.utils import Singleton
 
 logger = setup_logger(name='entity_linking')
 
-
+@Singleton
 class EntityLink(object):
     def __init__(self, cfg):
         self.cfg = cfg

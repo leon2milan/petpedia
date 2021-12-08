@@ -17,6 +17,8 @@ class Similarity(Matching):
         self.simcse = SIMCSE(cfg)
 
     def get_score_many(self, query, candidate_list):
+        if not candidate_list or not query:
+            return []
         if self.cfg.MATCH.METHODS == ['simcse']:
             if isinstance(candidate_list, list):
                 return self.simcse.query_sim(query, candidate_list)
