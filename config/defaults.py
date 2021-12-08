@@ -28,6 +28,7 @@ _C.BASE.SQL_COLLECTION = 'Neo4jQueryStatement'
 _C.BASE.SPECIALIZE_COLLECTION = 'AliasMapTABLE'
 _C.BASE.SENSETIVE_COLLECTION = 'sensetiveWord'
 _C.BASE.TSC_COLLECTION = 'toneShapeCode'
+_C.BASE.QUERY_DURING_GUIDE = 'querySuggest'
 
 _C.BASE.MODEL_PATH = os.path.join(ROOT, 'models')
 _C.BASE.QA_DATA = os.path.join(ROOT, 'data/knowledge_graph/all_qa.csv')
@@ -38,7 +39,7 @@ _C.BASE.DOG_DATA = os.path.join(ROOT, 'data/knowledge_graph/chien_name.csv')
 _C.BASE.DISEASE_DATA = os.path.join(ROOT, 'data/knowledge_graph/disease.txt')
 _C.BASE.SYMPTOM_DATA = os.path.join(ROOT, 'data/knowledge_graph/symptom.csv')
 
-_C.BASE.FROM_FILE = True
+_C.BASE.FROM_FILE = True if env == 'test' else False
 _C.BASE.DATA_PATH = os.path.join(ROOT, 'data/')
 _C.BASE.CHAR_FILE = os.path.join(ROOT, 'data/segmentation/all_char.txt')
 _C.BASE.FINE_WORD_FILE = os.path.join(ROOT,

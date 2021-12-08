@@ -1,9 +1,13 @@
 import itertools
 import json
 import re
+
 from config import get_cfg
 from qa.queryUnderstanding.preprocess.preprocess import clean
-from qa.queryUnderstanding.queryReformat.queryNormalization import Normalization
+from qa.queryUnderstanding.queryReformat.queryCorrection.correct import \
+    SpellCorrection
+from qa.queryUnderstanding.queryReformat.queryNormalization import \
+    Normalization
 from qa.retrieval.retrieval import BasicSearch
 from qa.tools import setup_logger
 from qa.tools.utils import flatten
@@ -17,7 +21,7 @@ class AdvancedSearch():
         self.cfg = cfg
         self.normalize = Normalization(cfg)
         self.bs = BasicSearch(cfg)
-        # self.sc = SpellCorrection(cfg)
+        self.sc = SpellCorrection(cfg)
 
     def __format_to(self, result, fmt):
         if fmt == "LIST":
@@ -241,7 +245,9 @@ class AdvancedSearch():
             [ {"query": "python 第五方", "type": "BEST_MATCH"}, {}, {} ]
         """
         # query 纠错
-        # e_pos, candidate, score = sc.correct(query)
+        e_pos, candidate, score = self.sc.correct(query)
+        if candidate:
+            query = query[:e_pos[0]] + candidate + query[e_pos[1]:]
 
         # query 归一
         r = []

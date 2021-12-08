@@ -17,6 +17,7 @@ from qa.queryUnderstanding.representation.ngram import BiGram
 from qa.tools import flatten, setup_logger
 from qa.tools.bk_tree import BKTree
 from qa.tools.trie import Trie
+from qa.tools.utils import Singleton
 
 logger = setup_logger(level='info', name='correction')
 
@@ -29,7 +30,7 @@ def gen_ranges(seg_list):
         st += len(i)
     return res
 
-
+@Singleton
 class SpellCorrection(object):
     def __init__(self, cfg):
         logger.info('Initializing Correction Module ....')

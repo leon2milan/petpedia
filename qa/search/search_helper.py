@@ -20,7 +20,7 @@ class SearchHelper:
     def sensetive_detect(self, query):
         res = self.sen_detector.search_all(query)
         flag = False 
-        if len(res) > 0 :
+        if len(res) > 0:
             flag = True
             res = [query[x[0]: x[1] + 1] for x in res]
         return flag, res
@@ -46,3 +46,4 @@ if __name__ == "__main__":
     helper = SearchHelper(cfg)
     print(helper.hot_query())
     print(helper.sensetive_detect('习大大'))
+    print(helper.sensetive_detect('犬细小病毒的症状'))

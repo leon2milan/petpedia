@@ -25,7 +25,7 @@ if __name__ == "__main__":
     cfg = get_cfg()
     searchObj = Search(cfg)
     start = time.time()
-    test = ['哈士奇老拆家怎么办', '犬瘟热', '狗发烧', '金毛', '拉布拉多不吃东西怎么办']
+    test = ['哈士奇老拆家怎么办', '犬瘟热', '狗发烧', '金毛', '拉布拉多不吃东西怎么办', '犬细小病毒的症状']
     for i in test: 
         res = searchObj.search(i)
         logger.info('search takes time: {}'.format((time.time() - start) / 60))

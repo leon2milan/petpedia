@@ -11,13 +11,10 @@ TODO: try to rebuild the code in c++
 
 3.  run `python qa/queryUnderstanding/representation/word2vec.py` to train word2vec embedding.
 
-4.  run `python qa/queryUnderstanding/representation/sif.py` train pca model.
-NOTE: after crawling large data. This model become worse. 
-TODO: Need optimize.
-
-5.  run `python qa/retrieval/semantic/hnsw.py` to train hnsw model.
+4.  run `python qa/retrieval/semantic/hnsw.py` to train hnsw model.
 TODO: HNSW do not load data, get data via mongo
-6.  run `python qa/queryUnderstanding/queryReformat/queryNormalization/synonym_detection.py` to get synonym word. Before running, it's better to set which words need to find synonym word in `data/synonym/synonym.txt`. Because this is unsupervised method. You need filter one more time.
+
+5.  run `python qa/queryUnderstanding/queryReformat/queryNormalization/synonym_detection.py` to get synonym word. Before running, it's better to set which words need to find synonym word in `data/synonym/synonym.txt`. Because this is unsupervised method. You need filter one more time.
 TODO: NEED to run again
 
 ## content profile

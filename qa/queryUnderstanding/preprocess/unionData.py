@@ -20,8 +20,15 @@ if cfg.BASE.FROM_FILE:
     qa = qa[qa['answer'] != ''].reset_index(drop=True)
 
     qa['unrelevent'] = False
-    qa.iloc[20511:34295]['unrelevent'] = True
-    qa.iloc[44770:67108]['unrelevent'] = True
+    qa.loc[7001: 8017, 'unrelevent'] = True
+    qa.loc[8027: 9519, 'unrelevent'] = True
+    qa.loc[9530: 11563, 'unrelevent'] = True
+    qa.loc[11565: 13519, 'unrelevent'] = True
+    qa.loc[40129: 49027, 'unrelevent'] = True
+    qa.loc[54431: 80919, 'unrelevent'] = True
+    qa.loc[91413: 109696, 'unrelevent'] = True
+    qa.loc[110844: 113751, 'unrelevent'] = True
+    qa.loc[113881: 160111, 'unrelevent'] = True
     qa = qa[~qa['unrelevent']][['question', 'answer']].reset_index()
 
     qa['question_fine_cut'] = qa['question'].progress_apply(

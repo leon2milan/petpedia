@@ -22,7 +22,7 @@ ex = [
     "Gm", "gm", "游戏管理员", "Client", "Server", "CS", "Cs", "cs", "cS", "KEFU",
     "kefu", "Kefu", "KeFu", "助理", "客户服务", "客服", "服务天使", "TEsT", "tESt", "test",
     "TeSt", "tEST", "Test", "测试", "辅助程序", "运营", "运营者", "运营组", "运营商", "运营长",
-    "运营官", "运营人", "犬"
+    "运营官", "运营人", "犬", "毒"
 ]
 data = [
     x.strip() for x in open(

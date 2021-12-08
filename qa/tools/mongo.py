@@ -69,7 +69,7 @@ class Mongo():
 
     def clean(self, collection):
         if self.get_state():
-            return self.db[collection].remove()
+            return self.db.drop_collection(collection)
         else:
             logger.error("mongo service is down. Please check.")
             raise _MongoClientErrorHandler

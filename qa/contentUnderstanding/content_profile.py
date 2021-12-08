@@ -22,13 +22,13 @@ specialize = Words(cfg).get_specializewords
 
 rough = W2V(cfg, is_rough=True)
 
-qa = pd.read_csv('data/knowledge_graph/all_qa.csv').fillna('')
+qa = pd.DataFrame(list(mongo.find(cfg.BASE.QA_COLLECTION, {})))
 qa = qa[qa['answer'] != ''].reset_index(drop=True)
-breed = {**specialize['cat'], **specialize['dog']}
-cat = specialize['cat']
-dog = specialize['dog']
-symptom = specialize['symptom']
-disease = specialize['disease']
+breed = {**specialize['CAT'], **specialize['DOG']}
+cat = specialize['CAT']
+dog = specialize['DOG']
+symptom = specialize['SYMPTOMS']
+disease = specialize['DISEASE']
 
 
 def extract_tag(s, dic):
