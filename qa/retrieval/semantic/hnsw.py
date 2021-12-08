@@ -69,7 +69,7 @@ class HNSW(ANN):
         assert dim == data.shape[1]
         hnsw = data
         num_elements = data.shape[0]
-        assert num_elements == max(ids) + 1
+        assert num_elements == max(ids) + 1, f"num_elements: {num_elements}, max id: {max(ids) + 1}"
 
         # Declaring index
         p = hnswlib.Index(space=self.cfg.RETRIEVAL.HNSW.SPACE,
@@ -98,7 +98,7 @@ class HNSW(ANN):
             np.mean(labels.reshape(-1) == np.arange(len(hnsw)))))
         test_vec = self.sent_func(['哈士奇', '拆家'])
         labels, distances = p.knn_query(test_vec, k=10)
-        print(labels, distances)
+        # print(labels, distances)
         # p.save_index(to_file)
         pickle.dump(p, open(to_file, 'wb'))
         return p
@@ -150,6 +150,8 @@ class HNSW(ANN):
 
     def search(self, qeury_list):
         test_vec = self.sent_func(qeury_list)
+        if test_vec.shape != (1, self.emb_size):
+            return []
         labels, distances = self.hnsw.knn_query(test_vec,
                                                 k=int(
                                                     self.cfg.RETRIEVAL.LIMIT))
@@ -192,6 +194,7 @@ if __name__ == "__main__":
     print('fine', [x['docid'] for x in fine.search(['哈士奇', '拆', '家'])])
     print('fine', [x['docid'] for x in fine.search(['狗', '老', '拆', '家'])])
     print('fine', [x['docid'] for x in fine.search(['哈士奇', '老', '拆', '家'])])
+    print('fine', [x['docid'] for x in rough.search(['犬细小'])])
 
     # know = KNOWLEDGE_ANN(cfg)
     # print('know', [x['entity'] for x in know.search(['西伯利亚哈士奇犬', '拆家'])])
