@@ -29,6 +29,8 @@ data = [
         'data/dictionary/sensitive/sensitive_words_lines.txt').readlines()
     if x not in ex and len(x) > 1
 ]
+
+mongo.clean(cfg.BASE.SENSETIVE_COLLECTION)
 for x in data:
     mongo.insert_one(cfg.BASE.SENSETIVE_COLLECTION, {'word': x})
 
@@ -220,6 +222,8 @@ hanzi = pd.concat([
                       values='code').reset_index(), hanzi
 ])
 
+
+mongo.clean('toneShapeCode')
 hanzi.progress_apply(lambda row: mongo.insert_one(
     'toneShapeCode', dict(zip(hanzi.columns, row.values))),
                      axis=1)

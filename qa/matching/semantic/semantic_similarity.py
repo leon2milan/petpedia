@@ -32,3 +32,4 @@ if __name__ == '__main__':
     s1 = ['哈士奇', '拆家', '怎么办']
     s2 = ['狗狗', '吐', '了', '怎么办']
     print(ss.get_score(s1, s2))
+    print(ss.get_score(['聪明'], ['智商']))

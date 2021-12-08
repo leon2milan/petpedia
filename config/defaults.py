@@ -48,15 +48,23 @@ _C.BASE.ROUGH_WORD_FILE = os.path.join(ROOT,
                                        'data/segmentation/all_rough_word.txt')
 
 _C.BASE.FINE_WORD2VEC = os.path.join(ROOT,
-                                     'models/embedding/fine_word2vec.bin')
+                                     'models/representation/embedding/fine_word2vec.bin')
 _C.BASE.ROUGH_WORD2VEC = os.path.join(ROOT,
-                                      'models/embedding/rough_word2vec.bin')
+                                      'models/representation/embedding/rough_word2vec.bin')
 _C.BASE.CHAR_WORD2VEC = os.path.join(ROOT,
-                                     'models/embedding/char_word2vec.bin')
+                                     'models/representation/embedding/char_word2vec.bin')
 
 _C.BASE.KEY_POS_INDEX = 'POS'
 _C.BASE.KEY_TF_INDEX = 'TF'
 _C.BASE.KEY_LD_INDEX = 'LD'
+
+# 数据结构
+_C.BASE.DATA_STRUCTURE = CN()
+
+_C.BASE.DATA_STRUCTURE.TRIE = CN()
+_C.BASE.DATA_STRUCTURE.TRIE.SAVE_PATH = os.path.join(ROOT,
+                                     'models/basic_structure/')
+
 
 _C.WEB = CN()
 _C.WEB.PORT = 6400
@@ -113,11 +121,11 @@ _C.REPRESENTATION.WORD2VEC.PRETRAINED = os.path.join(
 
 _C.REPRESENTATION.SIF = CN()
 _C.REPRESENTATION.SIF.FINE_PCA_PATH = os.path.join(
-    ROOT, 'models/representation/fine_pac.pkl')
+    ROOT, 'models/representation/sif/fine_pac.pkl')
 _C.REPRESENTATION.SIF.FINE_WEIGHTFILE_PATH = os.path.join(
     ROOT, 'data/basic_info/rough_freq.txt')
 _C.REPRESENTATION.SIF.ROUGH_PCA_PATH = os.path.join(
-    ROOT, 'models/representation/rough_pac.pkl')
+    ROOT, 'models/representation/sif/rough_pac.pkl')
 _C.REPRESENTATION.SIF.ROUGH_WEIGHTFILE_PATH = os.path.join(
     ROOT, 'data/basic_info/rough_freq.txt')
 _C.REPRESENTATION.SIF.A = 1e-3
@@ -125,7 +133,7 @@ _C.REPRESENTATION.SIF.RMPC = 1
 
 _C.REPRESENTATION.KENLM = CN()
 _C.REPRESENTATION.KENLM.SAVE_PATH = os.path.join(ROOT,
-                                                 'models/representation/')
+                                                 'models/representation/language_model/')
 _C.REPRESENTATION.KENLM.PROJECT = "pet_ngram"
 _C.REPRESENTATION.KENLM.MEMORY = "10%"  # 运行预占用内存
 _C.REPRESENTATION.KENLM.MIN_COUNT = 2  # n-grams考虑的最低频率
@@ -138,12 +146,16 @@ _C.REPRESENTATION.CUSTOM_W2V.EMB_SIZE = 200
 _C.REPRESENTATION.CUSTOM_W2V.SAVE_PATH = os.path.join(
     ROOT, 'models/embedding/custom_w2v.bin')
 
+_C.REPRESENTATION.NGRAM = CN()
+_C.REPRESENTATION.NGRAM.SAVE_PATH = os.path.join(
+    ROOT, 'models/representation/ngram')
+
 # self pet pretrain model
 _C.REPRESENTATION.PRE_TRAIN = CN()
 _C.REPRESENTATION.PRE_TRAIN.USE_WORD = False
 _C.REPRESENTATION.PRE_TRAIN.MODE = 'base'  #['base', 'medium', 'small', 'tiny']
 
-#simCSE
+# simCSE
 _C.REPRESENTATION.SIMCSE = CN()
 # 基本参数
 _C.REPRESENTATION.SIMCSE.TYPE = 'unsup'  #['unsup', 'sup']
@@ -192,8 +204,7 @@ _C.SYNONYM.INPUT_WORD = os.path.join(ROOT, 'data/dictionary/synonym/init.txt')
 
 # 纠错
 _C.CORRECTION = CN()
-_C.CORRECTION.MODEL_FILE = os.path.join(ROOT, 'models/correction/correct.pkl')
-_C.CORRECTION.PINYIN_PATH = os.path.join(_C.BASE.DATA_PATH, 'pinyin')
+_C.CORRECTION.MODEL_FILE = os.path.join(ROOT, 'models/correction/')
 _C.CORRECTION.THRESHOLD = 5
 _C.CORRECTION.DATS_PATH = os.path.join(ROOT, 'models/correction/dats.dat')
 _C.CORRECTION.BKTREE_PATH = os.path.join(ROOT, 'models/correction/bktree.pkl')

@@ -30,9 +30,9 @@ class Embedding(metaclass=ABCMeta):
                 if s in w2v_model.wv.vocab.keys():
                     arr.append(w2v_model.wv.get_vector(s))
         if agg == 'mean':
-            return np.mean(np.array(arr), axis=0)
+            return np.mean(np.array(arr), axis=0).reshape(1, -1)
         elif agg == 'sum':
-            return np.sum(np.array(arr), axis=0)
+            return np.sum(np.array(arr), axis=0).reshape(1, -1)
         else:
             raise NotImplementedError
     

@@ -87,14 +87,14 @@ class BiGram:
         return prob, perplexity
 
     def save(self):
-        pickle.dump(self.wfreq, open(os.path.join(self.cfg.BASE.MODEL_PATH, 'embedding/unigram.pkl'), 'wb'))
-        pickle.dump(self.wwfreq, open(os.path.join(self.cfg.BASE.MODEL_PATH, 'embedding/bigram.pkl'), 'wb'))
-        pickle.dump(self.rewwfreq, open(os.path.join(self.cfg.BASE.MODEL_PATH, 'embedding/rebigram.pkl'), 'wb'))
+        pickle.dump(self.wfreq, open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'unigram.pkl'), 'wb'))
+        pickle.dump(self.wwfreq, open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'bigram.pkl'), 'wb'))
+        pickle.dump(self.rewwfreq, open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'rebigram.pkl'), 'wb'))
 
     def load(self):
-        self.wfreq = pickle.load(open(os.path.join(self.cfg.BASE.MODEL_PATH, 'embedding/unigram.pkl'), 'rb'))
-        self.wwfreq = pickle.load(open(os.path.join(self.cfg.BASE.MODEL_PATH, 'embedding/bigram.pkl'), 'rb'))
-        self.rewwfreq = pickle.load(open(os.path.join(self.cfg.BASE.MODEL_PATH, 'embedding/rebigram.pkl'), 'rb'))
+        self.wfreq = pickle.load(open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'unigram.pkl'), 'rb'))
+        self.wwfreq = pickle.load(open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'bigram.pkl'), 'rb'))
+        self.rewwfreq = pickle.load(open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'rebigram.pkl'), 'rb'))
         
         self.token_size = reduce(add, self.wfreq.values())
         self.token2_size = reduce(add, self.wwfreq.values())

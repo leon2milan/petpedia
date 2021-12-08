@@ -109,13 +109,13 @@ class Trie:
 
     def save(self, name):
         with open(
-                os.path.join(self.cfg.BASE.MODEL_PATH, "embedding",
+                os.path.join(self.cfg.BASE.DATA_STRUCTURE.TRIE.SAVE_PATH,
                              name + '_trie.pkl'), 'wb') as f:
             pickle.dump(self.dict, f)
 
     def load(self, name):
         with open(
-                os.path.join(self.cfg.BASE.MODEL_PATH, "embedding",
+                os.path.join(self.cfg.BASE.DATA_STRUCTURE.TRIE.SAVE_PATH,
                              name + '_trie.pkl'), 'rb') as f:
             self.dict = pickle.load(f)
 

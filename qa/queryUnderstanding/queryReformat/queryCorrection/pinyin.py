@@ -30,21 +30,21 @@ class Pinyin:
             self.entity_trie.load('entity_py')
             self.entity2py = json.load(
                 open(
-                    os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                    os.path.join(self.cfg.CORRECTION.MODEL_FILE,
                                  'entity_py_word2py.json')))
             self.py2entity = json.load(
                 open(
-                    os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                    os.path.join(self.cfg.CORRECTION.MODEL_FILE,
                                  'entity_py_py2word.json')))
             self.all_py_trie = Trie(cfg)
             self.all_py_trie.load('all_py')
             self.all_word2py = json.load(
                 open(
-                    os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                    os.path.join(self.cfg.CORRECTION.MODEL_FILE,
                                  'all_py_word2py.json')))
             self.all_py2word = json.load(
                 open(
-                    os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                    os.path.join(self.cfg.CORRECTION.MODEL_FILE,
                                  'all_py_py2word.json')))
         except:
             import traceback
@@ -89,11 +89,11 @@ class Pinyin:
             py_trie.add_word(pinyin)
         py_trie.save(name)
         with open(
-                os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                os.path.join(self.cfg.CORRECTION.MODEL_FILE,
                              name + '_word2py.json'), 'w') as f:
             json.dump(word2py, f, ensure_ascii=False)
         with open(
-                os.path.join(self.cfg.CORRECTION.PINYIN_PATH,
+                os.path.join(self.cfg.CORRECTION.MODEL_FILE,
                              name + '_py2word.json'), 'w') as f:
             json.dump(py2word, f, ensure_ascii=False)
         return word2py, py2word, py_trie

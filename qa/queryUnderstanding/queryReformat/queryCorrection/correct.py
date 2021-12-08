@@ -38,7 +38,7 @@ class SpellCorrection(object):
         self.init()
 
     def init(self):
-        # TODO: Pinyin trie tree use small data. Not 28W data.
+        # TODO: bigram use small data. Not 20W data.
         self.py = Pinyin(self.cfg)
         self.bigram = BiGram(self.cfg)
         self.tsc = TSC(self.cfg)
@@ -72,18 +72,17 @@ class SpellCorrection(object):
         self.same_pinyin = Words(self.cfg).get_samepinyin
         self.same_stroke = Words(self.cfg).get_samestroke
         self.specialization = Words(self.cfg).get_specializewords
-        try:
-            self.bk = BKTree(self.cfg)
-        except:
-            text = [
-                "".join(x.strip().split())
-                for x in open(cfg.BASE.ROUGH_WORD_FILE).readlines()
-            ]
-            bktree = BKTree(self.cfg)
-            bktree.builder(text)
-            del text, bktree
-            gc.collect()
-            self.bk = BKTree(self.cfg)
+        self.bk = BKTree(self.cfg)
+        # try:
+        #     self.bk.builder()
+        # except:
+        #     text = [
+        #         "".join(x.strip().split())
+        #         for x in open(cfg.BASE.ROUGH_WORD_FILE).readlines()
+        #     ]
+        #     self.bk.builder(text)
+        #     del text
+        #     gc.collect()
         self.word_trie = self.load_Trie('word')
         pycorrector.correct('感帽')
 

@@ -16,6 +16,7 @@ from tqdm import tqdm
 tqdm.pandas(desc="word2vec")
 logger = setup_logger()
 
+
 @REPRESENTATION_REGISTRY.register()
 @Singleton
 class W2V(Embedding):
@@ -38,7 +39,8 @@ class W2V(Embedding):
                     model_path, False)
 
     def load(self, path, gensim_way=True):
-        logger.info("loading word2vec model gensim_way: {}...".format(gensim_way))
+        logger.info(
+            "loading word2vec model gensim_way: {}...".format(gensim_way))
         if gensim_way:
             if self.cfg.REPRESENTATION.WORD2VEC.USE_LMDB:
                 path = path.strip('.bin')
@@ -69,18 +71,16 @@ class W2V(Embedding):
         return Embedding.wam(s, self.model)
 
     def save(self, model, path):
-        if self.cfg.REPRESENTATION.WORD2VEC.USE_LMDB:
-            path = path.strip('.bin')
-            if not os.path.exists(path):
-                os.makedirs(path)
-            writer = LmdbEmbeddingsWriter(
-                    W2V.iter_embeddings.__func__(model)).write(path)
-        else:
-            model.wv.save_word2vec_format(path, binary=False)
+        model.wv.save_word2vec_format(path, binary=False)
+        path = path.strip('.bin')
+        if not os.path.exists(path):
+            os.makedirs(path)
+        writer = LmdbEmbeddingsWriter(
+            W2V.iter_embeddings.__func__(model)).write(path)
 
     @staticmethod
     def iter_embeddings(gensim_model):
-        for word in gensim_model.vocab.keys():
+        for word in gensim_model.wv.vocab.keys():
             yield word, gensim_model[word]
 
     def load_data(self, data_path):

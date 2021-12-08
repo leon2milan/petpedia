@@ -16,8 +16,7 @@ class DuringGuide:
     def __init__(self, cfg) -> None:
         self.cfg = cfg
         self.mongo = Mongo(cfg, cfg.INVERTEDINDEX.DB_NAME)
-        self.specialize = reduce(lambda a, b: dict(a, **b),
-                                 Words(cfg).get_specializewords.values())
+        self.specialize = Words(cfg).get_specializewords
         self.ah = Ahocorasick()
 
     @staticmethod
@@ -25,9 +24,9 @@ class DuringGuide:
         res = []
         for i in range(len(s)):
             if i <= max_prefix_length:
-                res.append(s[:i + 1])
+                res.append((s[:i + 1], s))
                 if with_pinyin:
-                    res.append("".join(pinyin(s[:i + 1])))
+                    res.append(("".join(pinyin(s[:i + 1])), s))
         return res
 
     def build(self):
@@ -38,7 +37,7 @@ class DuringGuide:
         entity = pd.DataFrame(
             [re.sub(r'\（.*\）', '', x) for x in merge_all.keys() if x] +
             [x for y in merge_all.values()
-             for x in y if x]).drop_duplicates().reset_index(drop=True)
+             for x in y if x]).drop_duplicates().reset_index(drop=True).values.tolist()
         entity = [x for y in entity for x in y if x]
         prefix = []
         for word in entity:
