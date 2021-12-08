@@ -27,7 +27,6 @@ app = Flask(__name__)
 def index():
     data = request.json
     query = data['query']
-    query = query if isinstance(query, list) else [query]
     prediction, proba = intent.predict(query)
     return jsonify({"label": prediction, 'score': proba})
 
