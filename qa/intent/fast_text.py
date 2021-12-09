@@ -100,7 +100,9 @@ class Fasttest(object):
         entity, type = self.el.entity_link(text)
         if entity:
             return "pet_qa", 1.0
-        text = " ".join(self.seg.cut(text))
+        text = " ".join([x for x in self.seg.cut(text) if x not in self.stopwords])
+        if not text:
+            return "chitchat", 1.0
         lable, probs = self.classifier.predict(text)
         return INTENT_MAP[lable[0]], probs[0]
 
@@ -109,7 +111,7 @@ if __name__ == '__main__':
     cfg = get_cfg()
     intent = Fasttest(cfg, 'two_intent')
 
-    text = ["拉布拉多不吃东西怎么办", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛']
+    text = ["拉布拉多不吃东西怎么办", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛', '我和的']
 
     for x in text:
-        print(intent.predict(x))
+        print(x, intent.predict(x))
