@@ -198,7 +198,7 @@ class TSC:
         multiplier.append(1 - abs(strokesDictReverse[shapeCode1[-1]] -
                                   strokesDictReverse[shapeCode2[-1]]) * 1.0 /
                           max(strokesDictReverse[shapeCode1[-1]],
-                              strokesDictReverse[shapeCode2[-1]]))
+                              strokesDictReverse[shapeCode2[-1]], 1.0))
         shapeSimilarity = 0
         for i in range(featureSize):
             shapeSimilarity += wights[i] * multiplier[i]
