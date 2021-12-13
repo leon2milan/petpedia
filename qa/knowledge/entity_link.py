@@ -164,7 +164,7 @@ class EntityLink(object):
 
     def entity_link2(self, query):
         mention_time = time.time()
-        # mention_candiate_entitys = self.get_mentions(query)
+        mention_candiate_entitys = self.get_mentions(query)
         candiate_time = time.time()
         logger.info("得到候选实体时间：{:.8f}".format(candiate_time - mention_time))
         question_entity_pair = QuestionEntityPair(query,
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     mention = EntityLink(cfg)
     queries = [
         "狗乱吃东西怎么办", "边牧偶尔尿血怎么办", "猫咪经常拉肚子怎么办", "哈士奇拆家怎么办", "英短不吃东西怎么办？",
-        "拉布拉多和金毛谁聪明", "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬"
+        "拉布拉多和金毛谁聪明", "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬", "阿尔卑斯达切斯勃拉克犬"
     ]
     for query in queries:
         print(query, mention.entity_link(query))

@@ -5,6 +5,7 @@ from qa.queryUnderstanding.querySegmentation import Words
 from functools import reduce
 
 from qa.tools.utils import flatten
+
 logger = setup_logger()
 
 
@@ -20,7 +21,7 @@ class Normalization():
 
     def is_disease(self, s):
         return s in self.__disease
-    
+
     def is_symptom(self, s):
         return s in self.__symptom
 
@@ -44,9 +45,20 @@ class Normalization():
         self.__symptom = list(self.__specialize.get('SYMPTOMS', {}).keys())
         self.__dog = list(self.__specialize.get('DOG', {}).keys())
         self.__cat = list(self.__specialize.get('CAT', {}).keys())
-        self.__name2class = {n: c for c, b in self.__specialize.items() for n, _ in b.items()}
-        self.__name2alias = reduce(lambda a, b: dict(a, **b), self.__specialize.values())
-        self.__alias2name = {j if j else k: k for k, v in self.__name2alias.items() for j in v}
+        self.__name2class = {
+            n: c
+            for c, b in self.__specialize.items() for n, _ in b.items()
+        }
+        self.__name2alias = reduce(lambda a, b: dict(a, **b),
+                                   self.__specialize.values())
+        self.__alias2name = {
+            **{
+                j if j else k: k
+                for k, v in self.__name2alias.items() for j in v
+            },
+            **{k: k
+               for k, _ in self.__name2alias.items()}
+        }
 
     def build_ahocorasick(self):
         all_word = list(
@@ -70,7 +82,7 @@ if __name__ == '__main__':
     normalization = Normalization(cfg)
     query = '哈士奇拆家怎么办?'
     noun = normalization.detect(query)
-    # noun = [x for x in noun if x in normalization.alias2name.keys()][0]
+    noun = [x for x in noun if x in normalization.alias2name.keys()][0]
     normalize = {x: normalization.get_name(x) for x in noun}
     synonym = {k: normalization.get_alias(v) for k, v in normalize.items()}
 
