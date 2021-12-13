@@ -94,6 +94,13 @@ _C.TRITON = CN()
 _C.TRITON.HOST = ip
 _C.TRITON.PORT = 8000
 
+_C.NEO4J = CN()
+_C.NEO4J.HOST = ip
+_C.NEO4J.PORT = 7687
+_C.NEO4J.USER = 'neo4j'
+_C.NEO4J.PWD = 'Neo4j123'
+_C.NEO4J.DB = 'neo4j'
+
 _C.DICTIONARY = CN()
 _C.DICTIONARY.PATH = os.path.join(ROOT, 'data/dictionary/')
 _C.DICTIONARY.SYNONYM_PATH = os.path.join(ROOT, 'data/dictionary/synonym/')
@@ -193,7 +200,7 @@ _C.QUERY_SUGGESTION = CN()
 
 _C.QUERY_SUGGESTION.GPT = CN()
 _C.QUERY_SUGGESTION.GPT.TRAIN_DATA = os.path.join(
-    ROOT, "data/similarity/sim_query.csv")
+    ROOT, "data/similarity/train.csv")
 _C.QUERY_SUGGESTION.GPT.SAVE_PATH = os.path.join(
     ROOT, "models/gpt/")
 _C.QUERY_SUGGESTION.GPT.MAX_LEN = 150
@@ -209,6 +216,11 @@ _C.QUERY_SUGGESTION.PATIENT = 0
 _C.QUERY_SUGGESTION.VAL_NUM = 8000
 _C.QUERY_SUGGESTION.WARMUP_STEPS = 4000
 _C.QUERY_SUGGESTION.LOG_STEPS = 4000
+_C.QUERY_SUGGESTION.TEMPERATURE = 1
+_C.QUERY_SUGGESTION.TOPK = 5
+_C.QUERY_SUGGESTION.TOPP = 0  # 最高积累概率
+_C.QUERY_SUGGESTION.REPETITION_PENALTY = 1.0
+_C.QUERY_SUGGESTION.PREDICT_MAX_LEN = 25
 
 # 同义词挖掘
 _C.SYNONYM = CN()
@@ -227,6 +239,7 @@ _C.SYNONYM.INPUT_WORD = os.path.join(ROOT, 'data/dictionary/synonym/init.txt')
 _C.CORRECTION = CN()
 _C.CORRECTION.MODEL_FILE = os.path.join(ROOT, 'models/correction/')
 _C.CORRECTION.THRESHOLD = 5
+_C.CORRECTION.DO_USE = True
 _C.CORRECTION.DATS_PATH = os.path.join(ROOT, 'models/correction/dats.dat')
 _C.CORRECTION.BKTREE_PATH = os.path.join(ROOT, 'models/correction/bktree.pkl')
 
@@ -281,6 +294,21 @@ _C.INTENT.MODEL_PATH = os.path.join(ROOT, 'models/intent/')
 # 匹配
 _C.MATCH = CN()
 _C.MATCH.METHODS = ['simcse']  # one of ['cosine', 'edit', 'jaccard', 'simcse] or all
+
+_C.MATCH.BERT = CN()
+_C.MATCH.BERT.MODEL_PATH = os.path.join(ROOT, 'models/matching/')
+_C.MATCH.BERT.MAX_SEQ_LEN = 128
+_C.MATCH.BERT.NUM_LABELS = 2
+_C.MATCH.BERT.BATCH_SIZE = 8
+
+# 实体链接
+_C.ENTITYLINK = CN()
+_C.ENTITYLINK.TOPK = 2
+_C.ENTITYLINK.USE_RANK = 2
+_C.ENTITYLINK.MODEL_PATH = os.path.join(ROOT, 'models/entity_link/')
+_C.ENTITYLINK.ENTITY_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'entity_sim')
+_C.ENTITYLINK.ENTITY_NORM_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'entity_norm_sim')
+_C.ENTITYLINK.PATH_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'path_sim')
 
 # deploy
 _C.DEPLOY = CN()

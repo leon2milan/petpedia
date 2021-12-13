@@ -1,5 +1,5 @@
 import itertools
-import json
+import time
 import re
 
 from config import get_cfg
@@ -21,7 +21,8 @@ class AdvancedSearch():
         self.cfg = cfg
         self.normalize = Normalization(cfg)
         self.bs = BasicSearch(cfg)
-        self.sc = SpellCorrection(cfg)
+        if self.cfg.CORRECTION.DO_USE:
+            self.sc = SpellCorrection(cfg)
 
     def __format_to(self, result, fmt):
         if fmt == "LIST":
@@ -245,9 +246,12 @@ class AdvancedSearch():
             [ {"query": "python 第五方", "type": "BEST_MATCH"}, {}, {} ]
         """
         # query 纠错
-        e_pos, candidate, score = self.sc.correct(query)
-        if candidate:
-            query = query[:e_pos[0]] + candidate + query[e_pos[1]:]
+        s = time.time()
+        if self.cfg.CORRECTION.DO_USE:
+            e_pos, candidate, score = self.sc.correct(query)
+            if candidate:
+                query = query[:e_pos[0]] + candidate + query[e_pos[1]:]
+        logger.info('Correction takes: {}'.format(time.time() - s))
 
         # query 归一
         r = []
@@ -257,6 +261,9 @@ class AdvancedSearch():
 
         classes = {k: self.normalize.get_class(v) for k, v in normalize.items()}
         tags = flatten(classes.values())
+        if not tags:
+            tags = ['DOG'] if '狗' in query else ['CAT'] if '猫' in query else []
+        logger.debug(f'noun: {noun}, normalize: {normalize}, synonym: {synonym}, classes: {classes}, tags: {tags}')
         # query 扩展
 
         # BEST_MATCH： query 归一/原句 精确匹配 + knowled graph

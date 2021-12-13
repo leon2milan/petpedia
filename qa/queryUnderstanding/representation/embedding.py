@@ -11,7 +11,21 @@ class Embedding(metaclass=ABCMeta):
         self.seg = Segmentation(self.cfg)
 
     @staticmethod
-    def wam(sentence, w2v_model, USE_LMDB=True, agg='mean'):
+    def get_embedding(w2v_model, x, USE_LMDB=True, embedding_size=300):
+        if USE_LMDB:
+            try:
+                return w2v_model.get_word_vector(x)
+            except MissingWordError:
+                # 'google' is not in the database.
+                return np.zeros((embedding_size,))
+        else:
+            if x in w2v_model.wv.vocab.keys():
+                return w2v_model.wv.get_vector(x)
+            else:
+                return np.zeros((embedding_size,))
+
+    @staticmethod
+    def wam(sentences, w2v_model, USE_LMDB=True, agg='mean', embedding_size=300):
         '''
         @description: 通过word average model 生成句向量
         @param {type}
@@ -19,23 +33,17 @@ class Embedding(metaclass=ABCMeta):
         w2v_model: word2vec模型
         @return:
         '''
-        arr = []
-        for s in sentence:
-            if USE_LMDB:
-                try:
-                    arr.append(w2v_model.get_word_vector(s))
-                except MissingWordError:
-                    pass
-            else:
-                if s in w2v_model.wv.vocab.keys():
-                    arr.append(w2v_model.wv.get_vector(s))
-        if agg == 'mean':
-            return np.mean(np.array(arr), axis=0).reshape(1, -1)
-        elif agg == 'sum':
-            return np.sum(np.array(arr), axis=0).reshape(1, -1)
-        else:
-            raise NotImplementedError
-    
+        if not any(isinstance(el, list) for el in sentences):
+            sentences = [sentences]
+        func = np.mean if agg == 'mean' else np.sum
+        arr = np.stack([
+            func([
+                Embedding.get_embedding(w2v_model, s, USE_LMDB, embedding_size)
+                for s in sentence
+            ], axis=0) for sentence in sentences
+        ])
+        return arr
+
     @abstractmethod
     def get_embedding_helper(self):
         pass

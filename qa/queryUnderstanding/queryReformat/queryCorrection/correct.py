@@ -141,6 +141,7 @@ class SpellCorrection(object):
                     'candidate': item[::-1],
                     'source': 'char_reverse'
                 })
+            # may cause new error
             if i and before < self.cfg.CORRECTION.THRESHOLD and self.bigram.bi_tf(
                     item, text[i - 1]) > before:
                 # 与前词交换顺序
@@ -374,7 +375,7 @@ class SpellCorrection(object):
         err_info = self.detect(text_list, segranges)
         query_ssc = self.tsc.getSSC(text, 'ALL')
         logger.debug('detect takes: {}'.format(time.time() - start))
-        logger.info('err_info: {}'.format([(x['candidate'], x['source'])
+        logger.debug('err_info: {}'.format([(x['candidate'], x['source'])
                                            for x in err_info]))
         for err in err_info:
             sentence = text_list[:err['st_pos']] + [

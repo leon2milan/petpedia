@@ -27,7 +27,8 @@ directories = [
     'models/intent/',
     'models/gpt/',
     'models/pretrained_model',
-    'models/onnx_models'
+    'models/onnx_models',
+    'models/entity_link/'
 ]
 for i in directories:
     path = os.path.join(ROOT, i)

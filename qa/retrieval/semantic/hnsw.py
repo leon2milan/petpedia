@@ -12,6 +12,7 @@ from qa.tools.logger import setup_logger
 from config import get_cfg
 import gc
 from abc import ABCMeta, abstractmethod
+from operator import itemgetter
 
 from qa.tools.utils import Singleton
 
@@ -35,6 +36,7 @@ class ANN(metaclass=ABCMeta):
     @abstractmethod
     def search(self):
         pass
+
 
 @Singleton
 class HNSW(ANN):
@@ -69,7 +71,8 @@ class HNSW(ANN):
         assert dim == data.shape[1]
         hnsw = data
         num_elements = data.shape[0]
-        assert num_elements == max(ids) + 1, f"num_elements: {num_elements}, max id: {max(ids) + 1}"
+        assert num_elements == max(
+            ids) + 1, f"num_elements: {num_elements}, max id: {max(ids) + 1}"
 
         # Declaring index
         p = hnswlib.Index(space=self.cfg.RETRIEVAL.HNSW.SPACE,
@@ -149,52 +152,72 @@ class HNSW(ANN):
                 path, data['index'].values)
 
     def search(self, qeury_list):
+        if not any(isinstance(el, list) for el in qeury_list):
+            qeury_list = [qeury_list]
         test_vec = self.sent_func(qeury_list)
-        if test_vec.shape != (1, self.emb_size):
+        if test_vec.shape != (len(qeury_list), self.emb_size):
+            print(f"test_vec: {test_vec.shape} != {(len(qeury_list), self.emb_size)}")
             return []
+        labels, distances = self.hnsw.knn_query(test_vec[0],
+                                                k=int(
+                                                    self.cfg.RETRIEVAL.LIMIT))
         labels, distances = self.hnsw.knn_query(test_vec,
                                                 k=int(
                                                     self.cfg.RETRIEVAL.LIMIT))
-        distances = [
-            x for x in distances.reshape(-1).tolist()
-            if x < self.cfg.RETRIEVAL.HNSW.FILTER_THRESHOLD
+        # labels = labels[np.where(distances < self.cfg.RETRIEVAL.HNSW.FILTER_THRESHOLD)]
+        # distances = distances[
+        #     np.where(distances < self.cfg.RETRIEVAL.HNSW.FILTER_THRESHOLD)]
+        distances = dict(
+            zip(labels.reshape(-1).tolist(),
+                distances.reshape(-1).tolist()))
+
+        # note: mongo find in return shuffled data.
+        res = [[
+            {
+                'docid':
+                item['question'] if self.cfg.RETRIEVAL.USE_ES else
+                item['question'] + ":" + str(item['index']),
+                'index':
+                str(item['_id']),
+                'score':
+                20 - distances[item['index']],
+                'pos': [],
+                "doc": {
+                    'question': item['question'],
+                    'answer': item['answer'],
+                },
+                "source":
+                'rough' if self.is_rough else 'fine',
+            }
+            for item in self.mongo.find(self.cfg.BASE.QA_COLLECTION,
+                                        {'index': {
+                                            "$in": labels[i].tolist()
+                                        }}) if
+            distances[item['index']] < self.cfg.RETRIEVAL.HNSW.FILTER_THRESHOLD
+        ] for i in range(len(labels))]
+        return [
+            sorted(x, key=lambda keys: keys['score'], reverse=True) for x in res
         ]
-        labels = labels.reshape(-1).tolist()[:len(distances)]
-        distances = dict(zip(labels, distances))
-        # note: mongo find in return shuffled data. 
-        res = [{
-            'docid':
-            item['question'] if self.cfg.RETRIEVAL.USE_ES else
-            item['question'] + ":" + str(item['index']),
-            'index':
-            str(item['_id']),
-            'score':
-            20 - distances[item['index']],
-            'pos': [],
-            "doc": {
-                'question': item['question'],
-                'answer': item['answer'],
-            },
-            "source":
-            'rough' if self.is_rough else 'fine',
-        } for item in self.mongo.find(self.cfg.BASE.QA_COLLECTION,
-                                      {'index': {
-                                          "$in": labels
-                                      }})] 
-        return sorted(res, key=lambda key: key['score'], reverse=True)
 
 
 if __name__ == "__main__":
     cfg = get_cfg()
     rough = HNSW(cfg, is_rough=True)
-    print('rough', [(x['docid'], x['score'], x['index'])
-                    for x in rough.search(['哈士奇', '拆家'])])
+    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
+                    for y in rough.search(['狗狗', '容易', '感染', '什么', '疾病'])])
+    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
+                    for y in rough.search(['哈士奇', '老', '拆家'])])
+    print(
+        'rough',
+        [[y['docid'] for y in x] for x in rough.search([['犬细小'], ['哈士奇', '老', '拆', '家']])])
+    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
+                    for y in rough.search(['哈士奇', '拆家'])])
 
     fine = HNSW(cfg, is_rough=False)
-    print('fine', [x['docid'] for x in fine.search(['哈士奇', '拆', '家'])])
-    print('fine', [x['docid'] for x in fine.search(['狗', '老', '拆', '家'])])
-    print('fine', [x['docid'] for x in fine.search(['哈士奇', '老', '拆', '家'])])
-    print('fine', [x['docid'] for x in rough.search(['犬细小'])])
+    print('fine', [[y['docid'] for y in x] for x in fine.search(['哈士奇', '拆', '家'])])
+    print('fine', [[y['docid'] for y in x] for x in fine.search(['狗', '老', '拆', '家'])])
+    print('fine', [[y['docid'] for y in x] for x in fine.search(['哈士奇', '老', '拆', '家'])])
+    print('fine', [[y['docid'] for y in x] for x in rough.search(['犬细小'])])
 
     # know = KNOWLEDGE_ANN(cfg)
     # print('know', [x['entity'] for x in know.search(['西伯利亚哈士奇犬', '拆家'])])

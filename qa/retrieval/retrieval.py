@@ -1,4 +1,4 @@
-import json
+import time
 
 from config import get_cfg
 from qa.matching import Similarity
@@ -6,6 +6,7 @@ from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.retrieval.semantic.hnsw import HNSW
 from qa.retrieval.term import TermRetrieval
 from qa.tools import setup_logger
+from qa.tools.utils import flatten
 
 logger = setup_logger()
 
@@ -114,10 +115,14 @@ class BasicSearch():
         return query
 
     def __keywords_filter(self, result, keywords):
-        result = [
-            x for x in result
-            if x and any(keyword in x['docid'] for keyword in keywords)
-        ]
+        # result = [
+        #     x for x in result
+        #     if x and any(keyword in x['docid'] for keyword in keywords)
+        # ]
+        if 'DOG' in keywords and 'CAT' not in keywords:
+            result = [x for x in result if '猫' not in x['docid']]
+        elif 'DOG' not in keywords and 'CAT' in keywords:
+            result = [x for x in result if '狗' not in x['docid']]
         return result
 
     def search(self, seek_query_list):
@@ -139,21 +144,21 @@ class BasicSearch():
             if querysign in donequery:
                 continue
             donequery[querysign] = 1
-            logger.debug("query 检索原语: {}, rough cut 后 {}, fine cut 后 {}".format(
-                query,
-                rough_query if rough_query is not None else '',
-                fine_query if fine_query is not None else ''))
+            logger.debug(
+                "query 检索原语: {}, rough cut 后 {}, fine cut 后 {}".format(
+                    query, rough_query if rough_query is not None else '',
+                    fine_query if fine_query is not None else ''))
 
             if query["type"] == "BEST_MATCH":
                 result["BEST_MATCH"] += self.tr.search(query["query"],
                                                        query['type'],
                                                        is_rough=True)
                 if query["raw"]:
-                    result["BEST_MATCH"] += self.rough_hnsw.search(
-                        [x[0] for x in rough_query])
+                    result["BEST_MATCH"] += flatten(
+                        self.rough_hnsw.search([x[0] for x in rough_query]))
 
-                    result["BEST_MATCH"] += self.fine_hnsw.search(
-                        [x[0] for x in fine_query])
+                    result["BEST_MATCH"] += flatten(
+                        self.fine_hnsw.search([x[0] for x in fine_query]))
 
             if query["type"] == "WELL_MATCH":
                 result["WELL_MATCH"] += self.tr.search(rough_query,
@@ -179,8 +184,8 @@ class BasicSearch():
             logger.debug('retrieval result befort filter: {}'.format(result))
 
             # 根据关键词过滤
-            # result[query["type"]] = self.__keywords_filter(
-            #     result[query["type"]], query["key_words"])
+            result[query["type"]] = self.__keywords_filter(
+                result[query["type"]], query["key_words"])
             logger.debug('retrieval result after filter: {}'.format(result))
 
             # 减法
@@ -219,9 +224,11 @@ class BasicSearch():
         logger.debug('retrieval result after deduplicated: {}'.format(result))
 
         # l1 相关性排序 粗排
+        s = time.time()
         result = self.__cal_similarity([
             x['query'] for x in seek_query_list if x['type'] == 'BEST_MATCH'
         ][0], result)
+        logger.info('Cal simlarity takes: {}'.format(time.time() - s))
 
         result = TermRetrieval.sort_result(result)
         result = TermRetrieval.limit(result, self.cfg.RETRIEVAL.LIMIT)
@@ -231,8 +238,10 @@ class BasicSearch():
         return result
 
     def __cal_similarity(self, query, result):
+        s = time.time()
         scores = self.sim.get_score_many(
             query, [x['docid'].split(':')[0] for x in result])
+        logger.info('Get score takes: {}'.format(time.time() - s))
         for i in range(len(result)):
             result[i]['score'] = scores[i]
         return result

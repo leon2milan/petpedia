@@ -71,7 +71,8 @@ class Fasttest(object):
         entity['content'] = entity['entity'].apply(
             lambda x: " ".join(x) + "\t" + "__lable__" + str(1))
 
-        data = pd.concat([positive['content'], negtive['content'], entity['content']])
+        data = pd.concat(
+            [positive['content'], negtive['content'], entity['content']])
         data.sample(frac=1).to_csv(os.path.join(self.cfg.INTENT.DATA_PATH,
                                                 to_file),
                                    index=False,
@@ -100,7 +101,8 @@ class Fasttest(object):
         entity, type = self.el.entity_link(text)
         if entity:
             return "pet_qa", 1.0
-        text = " ".join([x for x in self.seg.cut(text) if x not in self.stopwords])
+        text = " ".join(
+            [x for x in self.seg.cut(text) if x not in self.stopwords])
         if not text:
             return "chitchat", 1.0
         lable, probs = self.classifier.predict(text)
@@ -111,7 +113,10 @@ if __name__ == '__main__':
     cfg = get_cfg()
     intent = Fasttest(cfg, 'two_intent')
 
-    text = ["拉布拉多不吃东西怎么办", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛', '我和的']
+    text = [
+        "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
+        '我和的', '阿提桑诺曼底短腿犬'
+    ]
 
     for x in text:
         print(x, intent.predict(x))
