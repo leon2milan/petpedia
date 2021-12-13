@@ -1,4 +1,3 @@
-
 import os
 import re
 import time
@@ -141,9 +140,14 @@ class EntityLink(object):
             self.cfg.ENTITYLINK.MODEL_PATH, 'lgb_model_link.txt'))
 
     def get_mentions(self, query):
+        species = '（犬）' if any(x in query for x in ['狗', '犬', '梗']) else '（猫）'
         normalize = self.normalization.detect(query)
         logger.debug(f"query: {query}, normalize: {normalize}")
-        normalize = [self.normalization.get_name(x) for x in normalize]
+        normalize = [
+            y for x in normalize for y in self.normalization.get_name(x)
+            if (len(re.findall(r'（.*）', y)) > 0 and re.findall(r'（.*）', y)[0]
+                == species) or (len(re.findall(r'（.*）', y)) == 0)
+        ]
         logger.debug(f"query: {query}, normalize1: {normalize}")
         normalize = [(x, self.normalization.get_class(x)) for x in normalize
                      if x]
@@ -162,9 +166,10 @@ class EntityLink(object):
 
         return [len(set(result_list)), len(cypher_result)]
 
-    def entity_link2(self, query):
+    def entity_link2(self, query, mention_candiate_entitys=None):
         mention_time = time.time()
-        mention_candiate_entitys = self.get_mentions(query)
+        if mention_candiate_entitys is None:
+            mention_candiate_entitys = self.get_mentions(query)
         candiate_time = time.time()
         logger.info("得到候选实体时间：{:.8f}".format(candiate_time - mention_time))
         question_entity_pair = QuestionEntityPair(query,
@@ -223,7 +228,7 @@ if __name__ == '__main__':
     mention = EntityLink(cfg)
     queries = [
         "狗乱吃东西怎么办", "边牧偶尔尿血怎么办", "猫咪经常拉肚子怎么办", "哈士奇拆家怎么办", "英短不吃东西怎么办？",
-        "拉布拉多和金毛谁聪明", "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬", "阿尔卑斯达切斯勃拉克犬"
+        "拉布拉多和金毛谁聪明", "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬", "阿尔卑斯达切斯勃拉克犬", "狗狗骨折了怎么办"
     ]
     for query in queries:
         print(query, mention.entity_link(query))

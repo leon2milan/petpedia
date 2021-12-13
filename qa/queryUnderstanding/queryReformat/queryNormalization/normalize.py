@@ -3,7 +3,7 @@ from qa.tools import Singleton, setup_logger
 from qa.tools.ahocorasick import Ahocorasick
 from qa.queryUnderstanding.querySegmentation import Words
 from functools import reduce
-
+from collections import defaultdict
 from qa.tools.utils import flatten
 
 logger = setup_logger()
@@ -51,23 +51,17 @@ class Normalization():
         }
         self.__name2alias = reduce(lambda a, b: dict(a, **b),
                                    self.__specialize.values())
-        self.__alias2name = {
-            **{
-                j if j else k: k
-                for k, v in self.__name2alias.items() for j in v
-            },
-            **{k: k
-               for k, _ in self.__name2alias.items()}
-        }
+        tmp = [(j if j else k, k) for k, v in self.__name2alias.items()
+               for j in v] + [(k, k) for k, _ in self.__name2alias.items()]
+        self.__alias2name = defaultdict(list)
+        for k, v in tmp:
+            self.__alias2name[k].append(v)
 
     def build_ahocorasick(self):
-        all_word = list(
-            set([
-                y for x in [[k, v] for k, v in self.__alias2name.items()]
-                for y in x
-            ]))
-        for i in all_word:
-            self.ah.add_word(i)
+        for k, item in self.__alias2name.items():
+            self.ah.add_word(k)
+            for i in item:
+                self.ah.add_word(i)
         self.ah.make()
 
     def detect(self, query):
@@ -92,22 +86,19 @@ if __name__ == '__main__':
     for n, ss in synonym.items():
         for s in ss:
             if n != s:
-                logger.info({"query": query.replace(n, s), "type": "BEST_MATCH"})
+                logger.info({
+                    "query": query.replace(n, s),
+                    "type": "BEST_MATCH"
+                })
     # WELL_MATCH： query 扩展 + query 归一结果（类别回退）
     if classes:
         for k, v in classes.items():
-            logger.info({
-                "query": query.replace(k, v),
-                "type": "WELL_MATCH"
-            })
+            logger.info({"query": query.replace(k, v), "type": "WELL_MATCH"})
     else:
         logger.info({"query": query, "type": "WELL_MATCH"})
     # PART_MATCH： query 扩展 + query 归一结果（类别回退）
     if classes:
         for k, v in classes.items():
-            logger.info({
-                "query": query.replace(k, v),
-                "type": "PART_MATCH："
-            })
+            logger.info({"query": query.replace(k, v), "type": "PART_MATCH："})
     else:
         logger.info({"query": query, "type": "PART_MATCH："})
