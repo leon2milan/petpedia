@@ -11,7 +11,6 @@ directories = [
     'data/knowledge_graph',
     'data/segmentation',
     'data/dictionary',
-    'data/basic_info',
     'data/intent/',
     'data/dictionary/specialize/',
     'data/dictionary/sensitive/',

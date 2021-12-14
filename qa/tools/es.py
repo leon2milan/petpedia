@@ -1,7 +1,9 @@
 from elasticsearch import Elasticsearch
 import re
 from qa.tools import Singleton, setup_logger
+
 logger = setup_logger(name='es')
+
 
 @Singleton
 class ES:
@@ -34,7 +36,7 @@ class ES:
             x["_source"]['_idx'],
             'docid':
             x["_source"]['question'],
-            'doc':{
+            'doc': {
                 'question': x["_source"]['question'],
                 'answer': x["_source"]['answer']
             },

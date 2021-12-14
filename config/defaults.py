@@ -126,18 +126,6 @@ _C.REPRESENTATION.WORD2VEC.USE_LMDB = True
 _C.REPRESENTATION.WORD2VEC.PRETRAINED = os.path.join(
     ROOT, 'models/pretrained_model/sgns.wiki.word')
 
-_C.REPRESENTATION.SIF = CN()
-_C.REPRESENTATION.SIF.FINE_PCA_PATH = os.path.join(
-    ROOT, 'models/representation/sif/fine_pac.pkl')
-_C.REPRESENTATION.SIF.FINE_WEIGHTFILE_PATH = os.path.join(
-    ROOT, 'data/basic_info/rough_freq.txt')
-_C.REPRESENTATION.SIF.ROUGH_PCA_PATH = os.path.join(
-    ROOT, 'models/representation/sif/rough_pac.pkl')
-_C.REPRESENTATION.SIF.ROUGH_WEIGHTFILE_PATH = os.path.join(
-    ROOT, 'data/basic_info/rough_freq.txt')
-_C.REPRESENTATION.SIF.A = 1e-3
-_C.REPRESENTATION.SIF.RMPC = 1
-
 _C.REPRESENTATION.KENLM = CN()
 _C.REPRESENTATION.KENLM.SAVE_PATH = os.path.join(ROOT,
                                                  'models/representation/language_model/')
@@ -309,6 +297,11 @@ _C.ENTITYLINK.MODEL_PATH = os.path.join(ROOT, 'models/entity_link/')
 _C.ENTITYLINK.ENTITY_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'entity_sim')
 _C.ENTITYLINK.ENTITY_NORM_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'entity_norm_sim')
 _C.ENTITYLINK.PATH_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'path_sim')
+
+#KBQA
+_C.KBQA = CN()
+_C.ENTITYLINK.TEMPLATE = ['']
+
 
 # deploy
 _C.DEPLOY = CN()
