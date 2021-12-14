@@ -41,13 +41,10 @@ class ModelTest(unittest.TestCase):
             'models/representation/language_model/pet_ngram.corpus': 342721474,
             'models/representation/language_model/pet_ngram.chars': 25071
         }
-        output = {}
         for x in self.files:
             all_file = os.path.join(self.basic_file, x)
             for file in os.listdir(all_file):
                 if not os.path.isdir(os.path.join(all_file, file)):
-                    output[str(os.path.relpath(os.path.join(
-                        all_file,
-                        file)))] = Path(os.path.join(all_file,
-                                                     file)).stat().st_size
-        self.assertEquals(output, expect_output)
+                    p = str(os.path.relpath(os.path.join(all_file, file)))
+                    output = Path(os.path.join(all_file, file)).stat().st_size
+                    self.assertEqual(output, expect_output[p])
