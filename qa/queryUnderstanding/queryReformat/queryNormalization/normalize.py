@@ -76,11 +76,10 @@ if __name__ == '__main__':
     normalization = Normalization(cfg)
     query = '哈士奇拆家怎么办?'
     noun = normalization.detect(query)
-    noun = [x for x in noun if x in normalization.alias2name.keys()][0]
     normalize = {x: normalization.get_name(x) for x in noun}
-    synonym = {k: normalization.get_alias(v) for k, v in normalize.items()}
+    synonym = {k: normalization.get_alias(x) for k, v in normalize.items() for x in v}
 
-    classes = {k: normalization.get_class(v) for k, v in normalize.items()}
+    classes = {k: normalization.get_class(x) for k, v in normalize.items() for x in v}
     print(normalize, synonym, classes)
     logger.info({"query": query, "type": "BEST_MATCH"})
     for n, ss in synonym.items():

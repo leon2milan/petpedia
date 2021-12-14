@@ -257,9 +257,9 @@ class AdvancedSearch():
         r = []
         noun = self.normalize.detect(query)
         normalize = {x: self.normalize.get_name(x) for x in noun}
-        synonym = {k: self.normalize.get_alias(v) for k, v in normalize.items()}
+        synonym = {k: self.normalize.get_alias(x) for k, v in normalize.items() for x in v}
 
-        classes = {k: self.normalize.get_class(v) for k, v in normalize.items()}
+        classes = {k: self.normalize.get_class(x) for k, v in normalize.items() for x in v}
         tags = flatten(classes.values())
         if not tags:
             tags = ['DOG'] if '狗' in query else ['CAT'] if '猫' in query else []
