@@ -228,7 +228,7 @@ class BasicSearch():
         result = self.__cal_similarity([
             x['query'] for x in seek_query_list if x['type'] == 'BEST_MATCH'
         ][0], result)
-        logger.info('Cal simlarity takes: {}'.format(time.time() - s))
+        logger.debug('Cal simlarity takes: {}'.format(time.time() - s))
 
         result = TermRetrieval.sort_result(result)
         result = TermRetrieval.limit(result, self.cfg.RETRIEVAL.LIMIT)
@@ -241,7 +241,7 @@ class BasicSearch():
         s = time.time()
         scores = self.sim.get_score_many(
             query, [x['docid'].split(':')[0] for x in result])
-        logger.info('Get score takes: {}'.format(time.time() - s))
+        logger.debug('Get score takes: {}'.format(time.time() - s))
         for i in range(len(result)):
             result[i]['score'] = scores[i]
         return result

@@ -5,6 +5,7 @@ help:
 	@echo "build         : build project"
 	@echo "clean         : cleans up artifacts in project"
 	@echo "run           : run gunicorn service"
+	@echo "run           : test"
 	@echo "-------------------------------------------------"
 
 install: requirements.txt
@@ -20,3 +21,6 @@ clean:
 
 run:
 	bash ./start.sh
+
+test:
+	python -m pytest -n auto --dist=loadfile -s -v ./tests/

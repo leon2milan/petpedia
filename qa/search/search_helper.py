@@ -44,6 +44,6 @@ class SearchHelper:
 if __name__ == "__main__":
     cfg = get_cfg()
     helper = SearchHelper(cfg)
-    print(helper.hot_query())
+    print([x['doc']['question'] for x in helper.hot_query()])
     print(helper.sensetive_detect('习大大'))
     print(helper.sensetive_detect('犬细小病毒的症状'))

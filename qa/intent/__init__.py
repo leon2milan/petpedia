@@ -1,1 +1,1 @@
-from .fast_text import Fasttest
+from .fast_text import Fasttext

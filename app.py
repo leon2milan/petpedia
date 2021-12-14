@@ -4,7 +4,7 @@ from config import get_cfg
 from flask import Flask, jsonify, request
 from qa.tools import setup_logger
 from qa.main import Search
-from qa.intent import Fasttest
+from qa.intent import Fasttext
 from qa.knowledge import EntityLink
 from qa.search import SearchHelper
 from qa.queryUnderstanding.queryReformat.queryCorrection.correct import SpellCorrection
@@ -12,7 +12,7 @@ from qa.queryUnderstanding.queryReformat.queryCorrection.correct import SpellCor
 logger = setup_logger(name='APP')
 cfg = get_cfg()
 
-intent = Fasttest(cfg, 'two_intent')
+intent = Fasttext(cfg, 'two_intent')
 searchObj = Search(cfg)
 el = EntityLink(cfg)
 helper = SearchHelper(cfg)

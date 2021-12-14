@@ -32,3 +32,6 @@ paddlepaddle-gpu==2.2.1
 lightgbm
 neo4j
 levenshtein
+pytest
+pytest-xdist
+pytest-timeout

@@ -15,7 +15,7 @@ class Search(object):
     def search(self, query):
         s = time.time()
         res = self.AS.search(query)
-        logger.info('Search takes: {}'.format(time.time() - s))
+        logger.debug('Search takes: {}'.format(time.time() - s))
         return [{
             k: v
             for k, v in item.items() if k in ['index', 'score', 'doc']

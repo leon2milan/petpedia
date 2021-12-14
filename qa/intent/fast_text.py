@@ -12,7 +12,7 @@ from qa.knowledge import EntityLink
 INTENT_MAP = {'__lable__1': "pet_qa", "__lable__0": "chitchat"}
 
 
-class Fasttest(object):
+class Fasttext(object):
     def __init__(self, cfg, model=None):
         self.cfg = cfg
         self.mongo = Mongo(self.cfg, self.cfg.INVERTEDINDEX.DB_NAME)
@@ -111,7 +111,7 @@ class Fasttest(object):
 
 if __name__ == '__main__':
     cfg = get_cfg()
-    intent = Fasttest(cfg, 'two_intent')
+    intent = Fasttext(cfg, 'two_intent')
 
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',

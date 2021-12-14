@@ -251,7 +251,7 @@ class AdvancedSearch():
             e_pos, candidate, score = self.sc.correct(query)
             if candidate:
                 query = query[:e_pos[0]] + candidate + query[e_pos[1]:]
-        logger.info('Correction takes: {}'.format(time.time() - s))
+        logger.debug('Correction takes: {}'.format(time.time() - s))
 
         # query 归一
         r = []
