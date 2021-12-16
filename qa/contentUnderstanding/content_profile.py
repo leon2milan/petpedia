@@ -69,7 +69,7 @@ class ContentUnderstanding:
         return content_tag
 
     def save_to_mongo(self):
-        qa = pd.DataFrame(list(self.mongo.find(cfg.BASE.QA_COLLECTION, {})))
+        qa = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
         qa['content_tag'] = qa.apply(
             lambda row: self.understanding(row['question_rough_cut']), axis=1)
         qa = pd.concat([
@@ -107,3 +107,4 @@ class ContentUnderstanding:
 if __name__ == '__main__':
     cfg = get_cfg()
     cs = ContentUnderstanding(cfg)
+    cs.save_to_mongo()
