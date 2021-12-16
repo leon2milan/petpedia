@@ -8,7 +8,7 @@ class FileTest(unittest.TestCase):
 
     def test_predict(self):
         expect_output = [
-            102508
+            105801
         ]
         output = []
         for x in self.files:

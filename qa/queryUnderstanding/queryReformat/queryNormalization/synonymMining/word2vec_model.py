@@ -55,7 +55,7 @@ def cal_sim(path, input_word_code_dict, top_k):
         near_id = sorted_id[i][:top_k]
         nearst_word = [word_list[x] for x in near_id]
         line += str(code) + '\t' + word + '\t' + '|'.join(nearst_word) + '\n'
-    with open(os.path.join(cfg.QUERY_NORMALIZATION.SYNONYM_PATH, 'w2v_synonym.txt'),
+    with open(os.path.join(cfg.DICTIONARY.SYNONYM_PATH, 'w2v_synonym.txt'),
               'a',
               encoding='utf8') as f:
         f.write(line)

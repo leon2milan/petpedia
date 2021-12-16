@@ -7,6 +7,7 @@ from qa.retrieval.semantic.hnsw import HNSW
 from qa.retrieval.term import TermRetrieval
 from qa.tools import setup_logger
 from qa.tools.utils import flatten
+from qa.retrieval.manual.manual import Manual
 
 logger = setup_logger()
 
@@ -23,6 +24,7 @@ class BasicSearch():
         self.tr = TermRetrieval(cfg)
         self.rough_hnsw = HNSW(cfg, is_rough=True)
         self.fine_hnsw = HNSW(cfg, is_rough=False)
+        self.rules = Manual(self.cfg).get_rule()
 
     def __add_score(self, score, weight):
         return score + weight
@@ -114,15 +116,20 @@ class BasicSearch():
         ]
         return query
 
-    def __keywords_filter(self, result, keywords):
+    def __keywords_filter(self, result, _filter):
         # result = [
         #     x for x in result
         #     if x and any(keyword in x['docid'] for keyword in keywords)
         # ]
-        if 'DOG' in keywords and 'CAT' not in keywords:
-            result = [x for x in result if '猫' not in x['docid']]
-        elif 'DOG' not in keywords and 'CAT' in keywords:
-            result = [x for x in result if '狗' not in x['docid']]
+
+        for name, item in self.rules.items():
+            if _filter[name]:
+                for i in item:
+                    rule = i['rule']
+                    result = [
+                        x for x in result if x['tag'][name] and x['tag'][name]
+                        in [r for r in rule if r in _filter[name]]
+                    ]
         return result
 
     def search(self, seek_query_list):
@@ -136,10 +143,8 @@ class BasicSearch():
         notresult = []
         donequery = {}
         for query in seek_query_list:
-            if (query["type"] == "BEST_MATCH"
-                    and query["raw"]) or (query["type"] != "BEST_MATCH"):
-                rough_query = self.__preprocess(query["query"], is_rough=True)
-                fine_query = self.__preprocess(query["query"], is_rough=False)
+            rough_query = self.__preprocess(query["query"], is_rough=True)
+            fine_query = self.__preprocess(query["query"], is_rough=False)
             querysign = "%s%s" % (query["query"], query["type"])
             if querysign in donequery:
                 continue
@@ -150,42 +155,50 @@ class BasicSearch():
                     fine_query if fine_query is not None else ''))
 
             if query["type"] == "BEST_MATCH":
-                result["BEST_MATCH"] += self.tr.search(query["query"],
-                                                       query['type'],
-                                                       is_rough=True)
-                if query["raw"]:
-                    result["BEST_MATCH"] += flatten(
-                        self.rough_hnsw.search([x[0] for x in rough_query]))
+                if self.cfg.ES.ISUSE:
+                    result["BEST_MATCH"] += self.tr.search(" ".join(
+                        [x[0] for x in rough_query]),
+                                                           query['type'],
+                                                           is_rough=True)
+                result["BEST_MATCH"] += flatten(
+                    self.rough_hnsw.search([x[0] for x in rough_query]))
 
-                    result["BEST_MATCH"] += flatten(
-                        self.fine_hnsw.search([x[0] for x in fine_query]))
+                # result["BEST_MATCH"] += flatten(
+                #     self.fine_hnsw.search([x[0] for x in fine_query]))
 
             if query["type"] == "WELL_MATCH":
-                result["WELL_MATCH"] += self.tr.search(rough_query,
-                                                       query['type'],
-                                                       is_rough=True)
-                if len(result["WELL_MATCH"]) < self.cfg.RETRIEVAL.LIMIT:
-                    result["WELL_MATCH"] += self.tr.search(fine_query,
+                if self.cfg.ES.ISUSE:
+                    result["WELL_MATCH"] += self.tr.search(" ".join(
+                        [x[0] for x in rough_query]),
+                                                           query['type'],
+                                                           is_rough=True)
+                if self.cfg.ES.ISUSE and len(
+                        result["WELL_MATCH"]) < self.cfg.RETRIEVAL.LIMIT:
+                    result["WELL_MATCH"] += self.tr.search(" ".join(
+                        [x[0] for x in fine_query]),
                                                            query['type'],
                                                            is_rough=False)
 
             if query["type"] == "PART_MATCH":
-                if len(result["BEST_MATCH"]) + len(result["WELL_MATCH"]) < int(
-                        self.cfg.RETRIEVAL.PART_MATCH_RATIO *
-                        self.cfg.RETRIEVAL.LIMIT):
-                    result["PART_MATCH"] += self.tr.search(rough_query,
+                if self.cfg.ES.ISUSE and len(result["BEST_MATCH"]) + len(
+                        result["WELL_MATCH"]) < int(
+                            self.cfg.RETRIEVAL.PART_MATCH_RATIO *
+                            self.cfg.RETRIEVAL.LIMIT):
+                    result["PART_MATCH"] += self.tr.search(" ".join(
+                        [x[0] for x in rough_query]),
                                                            query['type'],
                                                            is_rough=True)
 
                     if len(result["PART_MATCH"]) < self.cfg.RETRIEVAL.LIMIT:
-                        result["PART_MATCH"] += self.tr.search(fine_query,
+                        result["PART_MATCH"] += self.tr.search(" ".join(
+                            [x[0] for x in fine_query]),
                                                                query['type'],
                                                                is_rough=False)
             logger.debug('retrieval result befort filter: {}'.format(result))
 
             # 根据关键词过滤
             result[query["type"]] = self.__keywords_filter(
-                result[query["type"]], query["key_words"])
+                result[query["type"]], query["filter"])
             logger.debug('retrieval result after filter: {}'.format(result))
 
             # 减法
@@ -243,7 +256,7 @@ class BasicSearch():
             query, [x['docid'].split(':')[0] for x in result])
         logger.debug('Get score takes: {}'.format(time.time() - s))
         for i in range(len(result)):
-            result[i]['score'] = scores[i]
+            result[i]['score'] += scores[i]
         return result
 
 

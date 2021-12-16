@@ -35,3 +35,4 @@ levenshtein
 pytest
 pytest-xdist
 pytest-timeout
+toml

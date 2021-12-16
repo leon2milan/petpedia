@@ -180,7 +180,7 @@ class HNSW(ANN):
                 'index':
                 str(item['_id']),
                 'score':
-                20 - distances[item['index']],
+                20 - distances[item['index']] * 1 if self.is_rough else 2.0,
                 'pos': [],
                 "doc": {
                     'question': item['question'],
@@ -188,6 +188,11 @@ class HNSW(ANN):
                 },
                 "source":
                 'rough' if self.is_rough else 'fine',
+                "tag":{
+                    'species': item['SPECIES'],
+                    'sex': item['SEX'],
+                    'age': item['AGE'],
+                }
             }
             for item in self.mongo.find(self.cfg.BASE.QA_COLLECTION,
                                         {'index': {
@@ -203,6 +208,16 @@ class HNSW(ANN):
 if __name__ == "__main__":
     cfg = get_cfg()
     rough = HNSW(cfg, is_rough=True)
+    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
+                    for y in rough.search(['想', '养', '哈士奇', '应该', '注意'])])
+    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
+                    for y in rough.search(['想', '养', '狗', '应该', '注意'])])
+    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
+                    for y in rough.search(['家', '猫', '半夜', '瞎', '叫唤', '咋办'])])
+    print('rough', [[(x['docid'], x['score'], x['index'], x['tag']) for x in y]
+                    for y in rough.search(['猫', '骨折', '了'])])
+    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
+                    for y in rough.search(['我', '想', '养', '个', '哈士奇', '，', '应该', '注意', '什么', '？'])])
     print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
                     for y in rough.search(['狗狗', '容易', '感染', '什么', '疾病'])])
     print('rough', [[(x['docid'], x['score'], x['index']) for x in y]

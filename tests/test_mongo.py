@@ -10,7 +10,7 @@ class ModelTest(unittest.TestCase):
         self.files = ['qa', 'sensetiveWord', 'toneShapeCode']
 
     def test_predict(self):
-        expect_output = [208633, 41107, 7238]
+        expect_output = [208633, 41105, 7238]
         output = []
         for i in self.files:
             output.append(len(list(self.mongo.find(i, {}))))

@@ -11,6 +11,8 @@ from qa.queryUnderstanding.queryReformat.queryNormalization import \
 from qa.retrieval.retrieval import BasicSearch
 from qa.tools import setup_logger
 from qa.tools.utils import flatten
+from qa.contentUnderstanding.content_profile import ContentUnderstanding
+
 
 logger = setup_logger(name='Search Advance')
 
@@ -19,10 +21,11 @@ class AdvancedSearch():
     def __init__(self, cfg) -> None:
         logger.info('Initializing Advanced Search Object ....')
         self.cfg = cfg
-        self.normalize = Normalization(cfg)
-        self.bs = BasicSearch(cfg)
+        self.normalize = Normalization(self.cfg)
+        self.bs = BasicSearch(self.cfg)
         if self.cfg.CORRECTION.DO_USE:
-            self.sc = SpellCorrection(cfg)
+            self.sc = SpellCorrection(self.cfg)
+        self.cs = ContentUnderstanding(self.cfg)
 
     def __format_to(self, result, fmt):
         if fmt == "LIST":
@@ -255,47 +258,38 @@ class AdvancedSearch():
 
         # query 归一
         r = []
-        noun = self.normalize.detect(query)
-        normalize = {x: self.normalize.get_name(x) for x in noun}
-        synonym = {k: self.normalize.get_alias(x) for k, v in normalize.items() for x in v}
-
-        classes = {k: self.normalize.get_class(x) for k, v in normalize.items() for x in v}
-        tags = flatten(classes.values())
-        if not tags:
-            tags = ['DOG'] if '狗' in query else ['CAT'] if '猫' in query else []
-        logger.debug(f'noun: {noun}, normalize: {normalize}, synonym: {synonym}, classes: {classes}, tags: {tags}')
+        content_tag = self.cs.understanding(query)
         # query 扩展
 
         # BEST_MATCH： query 归一/原句 精确匹配 + knowled graph
         r.append({
             "query": query,
             "type": "BEST_MATCH",
-            "key_words": tags,
-            "raw": True
+            "filter": {
+                'species': content_tag['SPECIES'],
+                'sex': content_tag['SEX'],
+                'age': content_tag['AGE'],
+            }
         })
-        for k, v in synonym.items():
-            for s in v:
-                r.append({
-                    "query": query.replace(k, s),
-                    "type": "BEST_MATCH",
-                    "key_words": tags,
-                    "raw": False
-                })
-                
+        
         # WELL_MATCH： query 原句  模糊搜索
         r.append({
             "query": query,
             "type": "WELL_MATCH",
-            "key_words": tags
+            "filter": {
+                'species': content_tag['SPECIES'],
+                'sex': content_tag['SEX'],
+                'age': content_tag['AGE'],
+            }
         })
+
         # PART_MATCH： （类别回退） 模糊搜索
-        if classes:
-            for k, v in classes.items():
-                r.append({
-                    "query": query.replace(k, v),
-                    "type": "PART_MATCH",
-                    "key_words": tags
-                })
+        # for k, v in classes.items():
+        #     r.append({
+        #         "query": query.replace(k, v),
+        #         "type": "PART_MATCH",
+        #         "key_words": tags
+        #     })
         return r
 
     def search(self, query):

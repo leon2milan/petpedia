@@ -51,10 +51,7 @@ class SynonymDetection(object):
 
     def word_id_file(self):
         entity_set = set()
-        data = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {}))).dropna()
-        self.data = data['question_rough_cut'].values.tolist() + [
-            x for ans in data['answer_rough_cut'] for x in ans
-        ]
+        self.data = [x.strip().split() for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()]
         for line in self.data:
             for word in line:
                 entity_set.add(word)
@@ -75,7 +72,7 @@ class SynonymDetection(object):
             word_code_list = []
             for k, v in self.input_word_code_dict.items():
                 word_code_list.append((k, v))
-            baike_crawler.baike_synonym_detect(self.cfg.QUERY_NORMALIZATION.SYNONYM_PATH,
+            baike_crawler.baike_synonym_detect(self.cfg.DICTIONARY.SYNONYM_PATH,
                                                word_code_list)
 
         if self.cfg.SYNONYM.USE_SN_MODEL:
@@ -88,7 +85,7 @@ class SynonymDetection(object):
                 top_k=self.cfg.SYNONYM.TOPK,
                 win_len=self.cfg.SYNONYM.WIN_LEN,
                 process_number=self.cfg.SYNONYM.PROCESS_NUM,
-                base_path=self.cfg.QUERY_NORMALIZATION.SYNONYM_PATH)
+                base_path=self.cfg.DICTIONARY.SYNONYM_PATH)
 
         if self.cfg.SYNONYM.USE_LEVEN_MODEL:
             l_model = levenshtein.Levenshtein_model(
@@ -98,7 +95,7 @@ class SynonymDetection(object):
                 if_use_pinyin=self.cfg.SYNONYM.USE_PINYIN,
                 pinyin_weight=self.cfg.SYNONYM.PINYIN_WEIGHT,
                 top_k=self.cfg.SYNONYM.TOPK,
-                base_path=self.cfg.QUERY_NORMALIZATION.SYNONYM_PATH)
+                base_path=self.cfg.DICTIONARY.SYNONYM_PATH)
             l_model.multipro_synonym_detect(self.input_word_code_dict)
 
         if self.cfg.SYNONYM.USE_W2V_MODEL:

@@ -14,25 +14,31 @@ class Similarity(Matching):
         self.cfg = cfg
         self.ls = LexicalSimilarity(cfg)
         self.ss = SemanticSimilarity(cfg)
-        self.simcse = SIMCSE(cfg)
+        if 'simcse' in self.cfg.MATCH.METHODS:
+            self.simcse = SIMCSE(cfg)
 
     def get_score_many(self, query, candidate_list):
         if not candidate_list or not query:
             return []
-        if self.cfg.MATCH.METHODS == ['simcse']:
+        scores = []
+        if 'simcse' in self.cfg.MATCH.METHODS:
             if isinstance(candidate_list, list):
-                return self.simcse.query_sim(query, candidate_list)
+                scores = self.simcse.query_sim(query, candidate_list)
             elif isinstance(candidate_list, str):
-                return self.simcse.similarity(query, candidate_list)
+                scores = self.simcse.similarity(query, candidate_list)
             else:
-                raise TypeError(f"simCSE does not support {type(candidate_list)}")
+                raise TypeError(
+                    f"simCSE does not support {type(candidate_list)}")
         query_list = self.seg.cut(query)
         candidate_cut_list = self.seg.cut(candidate_list)
         res = []
         for i in range(len(candidate_cut_list)):
-            res.append(
-                self.get_score(query, candidate_list[i], query_list,
-                               candidate_cut_list[i]))
+            score = self.get_score(query, candidate_list[i], query_list,
+                                   candidate_cut_list[i])
+            if len(scores) > 0:
+                score += scores[i]
+
+            res.append(score)
         return res
 
     def get_score(self, s1, s2, s1_list=None, s2_list=None):

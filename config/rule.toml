@@ -1,0 +1,31 @@
+# This file record human rule to control search or entity link result.
+# This part contains exclusive, 
+
+[exclusive]
+
+[[exclusive.species]]
+rule = ['DOG', 'CAT']
+
+# [[exclusive.age]]
+# rule = ['CHILD', 'ADULT', 'OLD']
+
+# [[exclusive.sex]]
+# rule = ['MALE', 'FEMALE']
+
+# [[exclusive.question]]
+# rule = ['CAUTION', 'WHEN', 'CAUSE', 'WAHT', 'HOW', 'PROB']
+
+# [[exclusive.scenario]]
+# rule = [
+#     'SYMPTOM',
+#     'DISEASE',
+#     'FOOD',
+#     'DRUG',
+#     'CHECK',
+#     'BASIC',
+#     'BEAUTY',
+#     'HEALTHY',
+#     'NURSE',
+#     'DOMESTICATE',
+#     'BREED',
+# ]

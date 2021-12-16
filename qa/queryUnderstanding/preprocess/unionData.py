@@ -20,17 +20,18 @@ if cfg.BASE.FROM_FILE:
     qa = qa[qa['answer'] != '']
 
     qa['unrelevent'] = False
-    qa.loc[7001: 8017, 'unrelevent'] = True
-    qa.loc[8027: 9519, 'unrelevent'] = True
-    qa.loc[9530: 11563, 'unrelevent'] = True
-    qa.loc[11565: 13519, 'unrelevent'] = True
-    qa.loc[34119: 34128, 'unrelevent'] = True
-    qa.loc[40129: 49027, 'unrelevent'] = True
-    qa.loc[54431: 80919, 'unrelevent'] = True
-    qa.loc[91413: 109696, 'unrelevent'] = True
-    qa.loc[110844: 113751, 'unrelevent'] = True
-    qa.loc[113881: 160111, 'unrelevent'] = True
-    qa = qa[~qa['unrelevent']][['question', 'answer']].reset_index(drop=True).reset_index()
+    qa.loc[7001:8017, 'unrelevent'] = True
+    qa.loc[8027:9519, 'unrelevent'] = True
+    qa.loc[9530:11563, 'unrelevent'] = True
+    qa.loc[11565:13519, 'unrelevent'] = True
+    qa.loc[34119:34128, 'unrelevent'] = True
+    qa.loc[40129:49027, 'unrelevent'] = True
+    qa.loc[54431:80919, 'unrelevent'] = True
+    qa.loc[91413:109696, 'unrelevent'] = True
+    qa.loc[110844:113751, 'unrelevent'] = True
+    qa.loc[113881:160111, 'unrelevent'] = True
+    qa = qa[~qa['unrelevent']][['question', 'answer'
+                                ]].reset_index(drop=True).reset_index()
 
     qa['question_fine_cut'] = qa['question'].progress_apply(
         lambda x:
@@ -45,11 +46,11 @@ else:
 
     db = conn['qa']
     qa = pd.DataFrame(list(db['qa'].find({})))
-mongo.clean('qa')
-mongo.insert_many('qa', qa.fillna('').to_dict('record'))
+mongo.clean(cfg.self.cfg.BASE.QA_COLLECTION)
+mongo.insert_many(cfg.self.cfg.BASE.QA_COLLECTION,
+                  qa.fillna('').to_dict('record'))
 
 es.insert_mongo('qa_v1')
-
 
 # if cfg.BASE.FROM_FILE:
 #     qa['answer_fine_cut'] = qa['answer'].progress_apply(

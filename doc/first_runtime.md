@@ -17,7 +17,10 @@ TODO: HNSW do not load data, get data via mongo
 5.  run `python qa/queryUnderstanding/queryReformat/queryNormalization/synonym_detection.py` to get synonym word. Before running, it's better to set which words need to find synonym word in `data/synonym/synonym.txt`. Because this is unsupervised method. You need filter one more time.
 TODO: NEED to run again
 
-6. run `qa/queryUnderstanding/querySuggest/query_during_guide.py` to generate profix data
+6. run `python qa/queryUnderstanding/querySuggest/query_during_guide.py` to generate profix data
+
+7. run `python qa/contentUnderstanding/content_profile.py` to tag question.
+
 ## content profile
 1. TODO: try to build profile for question&answer data.
 

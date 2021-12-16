@@ -6,8 +6,9 @@ from functools import reduce
 import os
 import re
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
-
-from qa.knowledge import EntityLink
+import pickle
+from qa.tools.ahocorasick import Ahocorasick
+from qa.tools import flatten
 
 INTENT_MAP = {'__lable__1': "pet_qa", "__lable__0": "chitchat"}
 
@@ -19,8 +20,8 @@ class Fasttext(object):
         self.seg = Segmentation(self.cfg)
         self.stopwords = Words(self.cfg).get_stopwords
         self.specialize = Words(cfg).get_specializewords
-        self.el = EntityLink(cfg)
         model = model if model and model is not None else 'intent'
+        self.build_detector()
         if model is None or not os.path.exists(
                 os.path.join(self.cfg.INTENT.MODEL_PATH,
                              '{}.bin'.format(model))):
@@ -29,6 +30,19 @@ class Fasttext(object):
             self.classifier = fasttext.load_model(
                 os.path.join(self.cfg.INTENT.MODEL_PATH,
                              '{}.bin'.format(model)))
+
+    def build_detector(self):
+        self.ah = Ahocorasick()
+        entity_word = flatten([
+            v for k, v in reduce(lambda a, b: dict(a, **b),
+                                 self.specialize.values()).items()
+        ])
+        qa = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
+        qa = flatten(qa['question_rough_cut'].apply(
+            lambda x: [y for y in x if y not in self.stopwords]).tolist())
+        for word in qa + entity_word:
+            self.ah.add_word(word)
+        self.ah.make()
 
     def load_data(self, to_file):
         base_path = os.path.join(self.cfg.BASE.DATA_PATH,
@@ -98,8 +112,8 @@ class Fasttext(object):
         # print("Number of examples:", result.nexamples)  #预测错的例子
 
     def predict(self, text):
-        entity, type = self.el.entity_link(text)
-        if entity:
+        res = self.ah.search(text)
+        if res:
             return "pet_qa", 1.0
         text = " ".join(
             [x for x in self.seg.cut(text) if x not in self.stopwords])
@@ -115,7 +129,7 @@ if __name__ == '__main__':
 
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
-        '我和的', '阿提桑诺曼底短腿犬'
+        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎'
     ]
 
     for x in text:

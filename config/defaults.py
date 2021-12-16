@@ -89,6 +89,7 @@ _C.ES.HOST = ip
 _C.ES.PORT = 9200
 _C.ES.USER = 'qa'
 _C.ES.PWD = 'ABCabc123'
+_C.ES.ISUSE = False
 
 _C.TRITON = CN()
 _C.TRITON.HOST = ip
@@ -227,7 +228,7 @@ _C.SYNONYM.INPUT_WORD = os.path.join(ROOT, 'data/dictionary/synonym/init.txt')
 _C.CORRECTION = CN()
 _C.CORRECTION.MODEL_FILE = os.path.join(ROOT, 'models/correction/')
 _C.CORRECTION.THRESHOLD = 5
-_C.CORRECTION.DO_USE = True
+_C.CORRECTION.DO_USE = False
 _C.CORRECTION.DATS_PATH = os.path.join(ROOT, 'models/correction/dats.dat')
 _C.CORRECTION.BKTREE_PATH = os.path.join(ROOT, 'models/correction/bktree.pkl')
 
@@ -281,7 +282,7 @@ _C.INTENT.MODEL_PATH = os.path.join(ROOT, 'models/intent/')
 
 # 匹配
 _C.MATCH = CN()
-_C.MATCH.METHODS = ['simcse']  # one of ['cosine', 'edit', 'jaccard', 'simcse] or all
+_C.MATCH.METHODS = ['edit', 'jaccard']  # one of ['cosine', 'edit', 'jaccard', 'simcse] or all
 
 _C.MATCH.BERT = CN()
 _C.MATCH.BERT.MODEL_PATH = os.path.join(ROOT, 'models/matching/')
@@ -300,8 +301,12 @@ _C.ENTITYLINK.PATH_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'path_sim')
 
 #KBQA
 _C.KBQA = CN()
-_C.ENTITYLINK.TEMPLATE = ['']
+_C.KBQA.ISUSE = False
+_C.KBQA.TEMPLATE = ['']
 
+_C.CONTENTUNDERSTANDING = CN()
+_C.CONTENTUNDERSTANDING.KEYWORD_FILE = os.path.join(ROOT, 'config/keyword.toml')
+_C.CONTENTUNDERSTANDING.RULE_FILE = os.path.join(ROOT, 'config/rule.toml')
 
 # deploy
 _C.DEPLOY = CN()

@@ -134,14 +134,22 @@ class EntityLink(object):
         self.w2v = W2V(self.cfg, is_rough=True)
         self.normalization = Normalization(self.cfg)
         self.seg = Segmentation(self.cfg)
-        self.es = BertSim(self.cfg, self.cfg.ENTITYLINK.ENTITY_MODEL)
-        self.neo4j = NEO4J(self.cfg)
-        self.gbm = lgb.Booster(model_file=os.path.join(
-            self.cfg.ENTITYLINK.MODEL_PATH, 'lgb_model_link.txt'))
+        if self.cfg.KBQA.ISUSE:
+            self.es = BertSim(self.cfg, self.cfg.ENTITYLINK.ENTITY_MODEL)
+            self.neo4j = NEO4J(self.cfg)
+            self.gbm = lgb.Booster(model_file=os.path.join(
+                self.cfg.ENTITYLINK.MODEL_PATH, 'lgb_model_link.txt'))
 
     def get_mentions(self, query):
-        species = '（犬）' if any(x in query for x in ['狗', '犬', '梗']) else '（猫）'
         normalize = self.normalization.detect(query)
+        normalize = [
+            x for x in normalize
+            if not any(x in dup and x != dup for dup in normalize)
+        ]
+        species = '（犬）' if len([
+            self.normalization.get_class(y) for x in normalize
+            for y in self.normalization.get_name(x)
+        ]) > 0 else '（猫）'
         logger.debug(f"query: {query}, normalize: {normalize}")
         normalize = [
             y for x in normalize for y in self.normalization.get_name(x)
@@ -152,7 +160,7 @@ class EntityLink(object):
         normalize = [(x, self.normalization.get_class(x)) for x in normalize
                      if x]
         logger.debug(f"query: {query}, normalize2: {normalize}")
-        return normalize
+        return list(set(normalize))
 
     def search_graph_feature(self, entity):
         cypher_sql = "match(n)-[r]->(m) where n.name ='{}' return r.name, keys(n)".format(
@@ -228,7 +236,8 @@ if __name__ == '__main__':
     mention = EntityLink(cfg)
     queries = [
         "狗乱吃东西怎么办", "边牧偶尔尿血怎么办", "猫咪经常拉肚子怎么办", "哈士奇拆家怎么办", "英短不吃东西怎么办？",
-        "拉布拉多和金毛谁聪明", "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬", "阿尔卑斯达切斯勃拉克犬", "狗狗骨折了怎么办"
+        "拉布拉多和金毛谁聪明", "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬", "阿尔卑斯达切斯勃拉克犬", "狗狗骨折了怎么办",
+        "金毛一直咳嗽检查说是支气管肺炎及支气管扩张怎么治"
     ]
     for query in queries:
         print(query, mention.entity_link(query))

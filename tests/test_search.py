@@ -1,7 +1,8 @@
 import unittest
 from config import get_cfg
 from qa.main import Search
-
+from qa.tools import setup_logger
+logger = setup_logger()
 
 class SearchTest(unittest.TestCase):
     def setUp(self):
@@ -13,14 +14,14 @@ class SearchTest(unittest.TestCase):
         ]
 
     def test_predict(self):
-        expect_output = [('哈士奇容易得哪些疾病', 0.55),
-                         ('哈士奇拆家怎么办？', 0.87),
-                         ('犬瘟热转阴', 0.88),
-                         ('狗反复发烧', 0.8),
-                         ('金毛叫什么', 0.63),
-                         ('拉布拉多不吃东西怎么办', 1.0),
-                         ('犬细小病毒的症状', 1.0), ('犬细小潜伏期', 0.82), [],
-                         ('芬兰波美拉尼亚丝毛狗怎么美容 芬兰狐狸犬美容方法', 0.27)]
+        expect_output = [('防治狗狗容易生病的疾病及方法', 20.7),
+                         ('哈士奇拆家吗', 21.1),
+                         ('犬瘟热转阴', 21.35),
+                         ('狗发烧的症状', 21.08),
+                         ('金毛九色', 21.17),
+                         ('拉布拉多不吃东西怎么回事', 21.6),
+                         ('犬细小病毒的症状', 22.0), ('犬细小潜伏期', 21.14), [],
+                         ('柯基犬怀孕吃什么', 19.18)]
         output = []
         for x in self.text:
             res = self.model_tester.search(x)
@@ -29,4 +30,5 @@ class SearchTest(unittest.TestCase):
                                for x in res][0])
             else:
                 output.append([])
+        logger.info(output)
         self.assertEquals(output, expect_output)
