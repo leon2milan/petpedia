@@ -23,7 +23,7 @@ class AdvancedSearch():
         self.cfg = cfg
         self.normalize = Normalization(self.cfg)
         self.bs = BasicSearch(self.cfg)
-        if self.cfg.CORRECTION.DO_USE:
+        if self.cfg.RETRIEVAL.DO_CORRECT:
             self.sc = SpellCorrection(self.cfg)
         self.cs = ContentUnderstanding(self.cfg)
 
@@ -250,16 +250,21 @@ class AdvancedSearch():
         """
         # query 纠错
         s = time.time()
-        if self.cfg.CORRECTION.DO_USE:
+        if self.cfg.RETRIEVAL.DO_CORRECT:
             e_pos, candidate, score = self.sc.correct(query)
             if candidate:
                 query = query[:e_pos[0]] + candidate + query[e_pos[1]:]
         logger.debug('Correction takes: {}'.format(time.time() - s))
 
         # query 归一
+        if self.cfg.RETRIEVAL.DO_NORMALIZE:
+            pass
         r = []
         content_tag = self.cs.understanding(query)
+
         # query 扩展
+        if self.cfg.RETRIEVAL.DO_EXPANSION:
+            pass
 
         # BEST_MATCH： query 归一/原句 精确匹配 + knowled graph
         r.append({

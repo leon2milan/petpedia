@@ -1,4 +1,5 @@
 import os
+from pickle import FALSE, TRUE
 from .config import CfgNode as CN
 from config import ROOT
 from qa.tools.utils import get_host_ip
@@ -47,12 +48,12 @@ _C.BASE.FINE_WORD_FILE = os.path.join(ROOT,
 _C.BASE.ROUGH_WORD_FILE = os.path.join(ROOT,
                                        'data/segmentation/all_rough_word.txt')
 
-_C.BASE.FINE_WORD2VEC = os.path.join(ROOT,
-                                     'models/representation/embedding/fine_word2vec.bin')
-_C.BASE.ROUGH_WORD2VEC = os.path.join(ROOT,
-                                      'models/representation/embedding/rough_word2vec.bin')
-_C.BASE.CHAR_WORD2VEC = os.path.join(ROOT,
-                                     'models/representation/embedding/char_word2vec.bin')
+_C.BASE.FINE_WORD2VEC = os.path.join(
+    ROOT, 'models/representation/embedding/fine_word2vec.bin')
+_C.BASE.ROUGH_WORD2VEC = os.path.join(
+    ROOT, 'models/representation/embedding/rough_word2vec.bin')
+_C.BASE.CHAR_WORD2VEC = os.path.join(
+    ROOT, 'models/representation/embedding/char_word2vec.bin')
 
 _C.BASE.KEY_POS_INDEX = 'POS'
 _C.BASE.KEY_TF_INDEX = 'TF'
@@ -62,9 +63,8 @@ _C.BASE.KEY_LD_INDEX = 'LD'
 _C.BASE.DATA_STRUCTURE = CN()
 
 _C.BASE.DATA_STRUCTURE.TRIE = CN()
-_C.BASE.DATA_STRUCTURE.TRIE.SAVE_PATH = os.path.join(ROOT,
-                                     'models/basic_structure/')
-
+_C.BASE.DATA_STRUCTURE.TRIE.SAVE_PATH = os.path.join(
+    ROOT, 'models/basic_structure/')
 
 _C.WEB = CN()
 _C.WEB.PORT = 6400
@@ -89,7 +89,6 @@ _C.ES.HOST = ip
 _C.ES.PORT = 9200
 _C.ES.USER = 'qa'
 _C.ES.PWD = 'ABCabc123'
-_C.ES.ISUSE = False
 
 _C.TRITON = CN()
 _C.TRITON.HOST = ip
@@ -128,8 +127,8 @@ _C.REPRESENTATION.WORD2VEC.PRETRAINED = os.path.join(
     ROOT, 'models/pretrained_model/sgns.wiki.word')
 
 _C.REPRESENTATION.KENLM = CN()
-_C.REPRESENTATION.KENLM.SAVE_PATH = os.path.join(ROOT,
-                                                 'models/representation/language_model/')
+_C.REPRESENTATION.KENLM.SAVE_PATH = os.path.join(
+    ROOT, 'models/representation/language_model/')
 _C.REPRESENTATION.KENLM.PROJECT = "pet_ngram"
 _C.REPRESENTATION.KENLM.MEMORY = "10%"  # 运行预占用内存
 _C.REPRESENTATION.KENLM.MIN_COUNT = 2  # n-grams考虑的最低频率
@@ -188,10 +187,9 @@ _C.REPRESENTATION.SIMCSE.SAVE_PATH = os.path.join(
 _C.QUERY_SUGGESTION = CN()
 
 _C.QUERY_SUGGESTION.GPT = CN()
-_C.QUERY_SUGGESTION.GPT.TRAIN_DATA = os.path.join(
-    ROOT, "data/similarity/train.csv")
-_C.QUERY_SUGGESTION.GPT.SAVE_PATH = os.path.join(
-    ROOT, "models/gpt/")
+_C.QUERY_SUGGESTION.GPT.TRAIN_DATA = os.path.join(ROOT,
+                                                  "data/similarity/train.csv")
+_C.QUERY_SUGGESTION.GPT.SAVE_PATH = os.path.join(ROOT, "models/gpt/")
 _C.QUERY_SUGGESTION.GPT.MAX_LEN = 150
 _C.QUERY_SUGGESTION.GPT.IGNORE_INDEX = -100
 _C.QUERY_SUGGESTION.GPT.EPOCH = 100
@@ -228,7 +226,6 @@ _C.SYNONYM.INPUT_WORD = os.path.join(ROOT, 'data/dictionary/synonym/init.txt')
 _C.CORRECTION = CN()
 _C.CORRECTION.MODEL_FILE = os.path.join(ROOT, 'models/correction/')
 _C.CORRECTION.THRESHOLD = 5
-_C.CORRECTION.DO_USE = False
 _C.CORRECTION.DATS_PATH = os.path.join(ROOT, 'models/correction/dats.dat')
 _C.CORRECTION.BKTREE_PATH = os.path.join(ROOT, 'models/correction/bktree.pkl')
 
@@ -244,10 +241,30 @@ _C.INVERTEDINDEX.DB_NAME = 'qa'  #  使用answer 构建索引
 
 # 检索
 _C.RETRIEVAL = CN()
-_C.RETRIEVAL.USE_ES = True
 _C.RETRIEVAL.ES_INDEX = 'qa_v1'
 _C.RETRIEVAL.LIMIT = 10
+_C.RETRIEVAL.TOPK = 1
 _C.RETRIEVAL.PART_MATCH_RATIO = 0.5
+
+_C.RETRIEVAL.DO_NORMALIZE = False
+_C.RETRIEVAL.DO_CORRECT = False
+_C.RETRIEVAL.DO_EXPANSION = False
+
+_C.RETRIEVAL.BEST_ROUTE = CN()
+_C.RETRIEVAL.BEST_ROUTE.DO_KBQA = False
+_C.RETRIEVAL.BEST_ROUTE.USE_ES = True
+
+_C.RETRIEVAL.WELL_ROUTE = CN()
+_C.RETRIEVAL.WELL_ROUTE.USE_HNSW = True
+_C.RETRIEVAL.WELL_ROUTE.USE_ES = True
+_C.RETRIEVAL.WELL_ROUTE.SEG_GRAINED = 'both'  # one of ['fine', 'rough', 'both']
+_C.RETRIEVAL.WELL_ROUTE.WORD_RANK_THRESHOLD = 1  # greater than
+
+_C.RETRIEVAL.PART_ROUTE = CN()
+_C.RETRIEVAL.PART_ROUTE.USE_CONTENT_PROFILE = False
+
+_C.RETRIEVAL.USE_ES = any(
+    [_C.RETRIEVAL.WELL_ROUTE.USE_ES, _C.RETRIEVAL.BEST_ROUTE.USE_ES])
 
 # HNSW 模型
 _C.RETRIEVAL.HNSW = CN()
@@ -282,7 +299,8 @@ _C.INTENT.MODEL_PATH = os.path.join(ROOT, 'models/intent/')
 
 # 匹配
 _C.MATCH = CN()
-_C.MATCH.METHODS = ['edit', 'jaccard']  # one of ['cosine', 'edit', 'jaccard', 'simcse] or all
+_C.MATCH.METHODS = ['edit', 'jaccard', 'cosine'
+                    ]  # one of ['cosine', 'edit', 'jaccard', 'simcse'] or all
 
 _C.MATCH.BERT = CN()
 _C.MATCH.BERT.MODEL_PATH = os.path.join(ROOT, 'models/matching/')
@@ -294,18 +312,21 @@ _C.MATCH.BERT.BATCH_SIZE = 8
 _C.ENTITYLINK = CN()
 _C.ENTITYLINK.TOPK = 2
 _C.ENTITYLINK.USE_RANK = 2
+_C.ENTITYLINK.USE_KG = False
 _C.ENTITYLINK.MODEL_PATH = os.path.join(ROOT, 'models/entity_link/')
-_C.ENTITYLINK.ENTITY_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'entity_sim')
-_C.ENTITYLINK.ENTITY_NORM_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'entity_norm_sim')
+_C.ENTITYLINK.ENTITY_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH,
+                                          'entity_sim')
+_C.ENTITYLINK.ENTITY_NORM_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH,
+                                               'entity_norm_sim')
 _C.ENTITYLINK.PATH_MODEL = os.path.join(_C.MATCH.BERT.MODEL_PATH, 'path_sim')
 
 #KBQA
 _C.KBQA = CN()
-_C.KBQA.ISUSE = False
 _C.KBQA.TEMPLATE = ['']
 
 _C.CONTENTUNDERSTANDING = CN()
-_C.CONTENTUNDERSTANDING.KEYWORD_FILE = os.path.join(ROOT, 'config/keyword.toml')
+_C.CONTENTUNDERSTANDING.KEYWORD_FILE = os.path.join(ROOT,
+                                                    'config/keyword.toml')
 _C.CONTENTUNDERSTANDING.RULE_FILE = os.path.join(ROOT, 'config/rule.toml')
 
 # deploy

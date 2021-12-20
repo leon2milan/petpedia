@@ -360,6 +360,9 @@ if __name__ == '__main__':
         os.path.join(cfg.BASE.DATA_PATH,
                      'dictionary/segmentation/new_word_2.csv'))
     new = pd.concat([new1, new2])
+    if os.path.exists(cfg.DICTIONARY.CUSTOM_WORDS):
+        old = pd.read_csv(os.path.join(cfg.DICTIONARY.CUSTOM_WORDS))
+        new = pd.concat([new, old]).drop_duplicates().reset_index(drop=True)
     word = copy.deepcopy(new)
     # print(len(set(word['word'].drop_duplicates().values.tolist()) - set(cuts)))
     word['word'] = word['word'].apply(lambda x: trans2simple(x))
@@ -404,4 +407,4 @@ if __name__ == '__main__':
     word = word[~word['word'].isin(exclude)]
 
     import os
-    word['word'].drop_duplicates().sort_values().to_csv(os.path.join(cfg.BASE.DATA_PATH, 'dictionary/segmentation/new_word.csv'),index=False)
+    word['word'].drop_duplicates().sort_values().to_csv(os.path.join(cfg.BASE.DATA_PATH, 'dictionary/segmentation/new_word.csv'), index=False)

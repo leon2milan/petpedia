@@ -156,11 +156,10 @@ class HNSW(ANN):
             qeury_list = [qeury_list]
         test_vec = self.sent_func(qeury_list)
         if test_vec.shape != (len(qeury_list), self.emb_size):
-            print(f"test_vec: {test_vec.shape} != {(len(qeury_list), self.emb_size)}")
+            print(
+                f"test_vec: {test_vec.shape} != {(len(qeury_list), self.emb_size)}"
+            )
             return []
-        labels, distances = self.hnsw.knn_query(test_vec[0],
-                                                k=int(
-                                                    self.cfg.RETRIEVAL.LIMIT))
         labels, distances = self.hnsw.knn_query(test_vec,
                                                 k=int(
                                                     self.cfg.RETRIEVAL.LIMIT))
@@ -188,7 +187,7 @@ class HNSW(ANN):
                 },
                 "source":
                 'rough' if self.is_rough else 'fine',
-                "tag":{
+                "tag": {
                     'species': item['SPECIES'],
                     'sex': item['SEX'],
                     'age': item['AGE'],
@@ -201,7 +200,8 @@ class HNSW(ANN):
             distances[item['index']] < self.cfg.RETRIEVAL.HNSW.FILTER_THRESHOLD
         ] for i in range(len(labels))]
         return [
-            sorted(x, key=lambda keys: keys['score'], reverse=True) for x in res
+            sorted(x, key=lambda keys: keys['score'], reverse=True)
+            for x in res
         ]
 
 
@@ -216,22 +216,26 @@ if __name__ == "__main__":
                     for y in rough.search(['家', '猫', '半夜', '瞎', '叫唤', '咋办'])])
     print('rough', [[(x['docid'], x['score'], x['index'], x['tag']) for x in y]
                     for y in rough.search(['猫', '骨折', '了'])])
-    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
-                    for y in rough.search(['我', '想', '养', '个', '哈士奇', '，', '应该', '注意', '什么', '？'])])
+    print('rough',
+          [[(x['docid'], x['score'], x['index']) for x in y]
+           for y in rough.search(
+               ['我', '想', '养', '个', '哈士奇', '，', '应该', '注意', '什么', '？'])])
     print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
                     for y in rough.search(['狗狗', '容易', '感染', '什么', '疾病'])])
     print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
                     for y in rough.search(['哈士奇', '老', '拆家'])])
-    print(
-        'rough',
-        [[y['docid'] for y in x] for x in rough.search([['犬细小'], ['哈士奇', '老', '拆', '家']])])
+    print('rough', [[y['docid'] for y in x]
+                    for x in rough.search([['犬细小'], ['哈士奇', '老', '拆', '家']])])
     print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
                     for y in rough.search(['哈士奇', '拆家'])])
 
     fine = HNSW(cfg, is_rough=False)
-    print('fine', [[y['docid'] for y in x] for x in fine.search(['哈士奇', '拆', '家'])])
-    print('fine', [[y['docid'] for y in x] for x in fine.search(['狗', '老', '拆', '家'])])
-    print('fine', [[y['docid'] for y in x] for x in fine.search(['哈士奇', '老', '拆', '家'])])
+    print('fine',
+          [[y['docid'] for y in x] for x in fine.search(['哈士奇', '拆', '家'])])
+    print('fine',
+          [[y['docid'] for y in x] for x in fine.search(['狗', '老', '拆', '家'])])
+    print('fine', [[y['docid'] for y in x]
+                   for x in fine.search(['哈士奇', '老', '拆', '家'])])
     print('fine', [[y['docid'] for y in x] for x in rough.search(['犬细小'])])
 
     # know = KNOWLEDGE_ANN(cfg)

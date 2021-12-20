@@ -55,7 +55,7 @@ class Similarity(Matching):
             elif method == 'cosine':
                 score += self.ss.get_score(s1_list, s2_list, 'cosine')
             elif method == 'simcse':
-                score += self.simcse.similarity(s1, s2)
+                score += 0.0
             else:
                 logger.warning(
                     'We do not know the similarity method of {}. Please contact the developper.'

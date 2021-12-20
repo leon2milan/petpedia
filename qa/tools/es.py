@@ -1,6 +1,7 @@
 from elasticsearch import Elasticsearch
 import re
 from qa.tools import Singleton, setup_logger
+from qa.contentUnderstanding.content_profile import ContentUnderstanding
 
 logger = setup_logger(name='es')
 
@@ -17,6 +18,7 @@ class ES:
             str(cfg.ES.PORT),
         ),
                                 verify_certs=False)
+        self.cs = ContentUnderstanding(cfg)
 
     def insert(self, data: dict, _index: str = "qa_v1"):
         res = self.es.index(index=_index, document=data)
@@ -47,7 +49,15 @@ class ES:
                     re.findall(re.compile(u"[\u4e00-\u9fa5]+"),
                                y['description']))
                 for y in x['_explanation']['details']
-            ]
+            ],
+            "tag": {
+                'species':
+                self.cs.understanding(x["_source"]['question'])['SPECIES'],
+                'sex':
+                self.cs.understanding(x["_source"]['question'])['SEX'],
+                'age':
+                self.cs.understanding(x["_source"]['question'])['AGE'],
+            }
         } for x in res['hits']['hits']]
         return res
 
@@ -66,12 +76,12 @@ class ES:
                 """
         return self.search(_index, query)
 
-    def fuzzy_search(self, _index, _row, _query):
+    def fuzzy_search(self, _index, _row, _query:list):
         query = f"""
                 {{
                 "query":{{
                     "match": {{
-                            "{_row}.analyzed": "{' OR '.join(_query.split(' '))}"
+                            "{_row}.analyzed": "{' OR '.join(_query)}"
                         }}
                     }},
                 "size": {self.cfg.RETRIEVAL.LIMIT},

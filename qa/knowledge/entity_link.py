@@ -134,7 +134,7 @@ class EntityLink(object):
         self.w2v = W2V(self.cfg, is_rough=True)
         self.normalization = Normalization(self.cfg)
         self.seg = Segmentation(self.cfg)
-        if self.cfg.KBQA.ISUSE:
+        if self.cfg.ENTITYLINK.USE_KG:
             self.es = BertSim(self.cfg, self.cfg.ENTITYLINK.ENTITY_MODEL)
             self.neo4j = NEO4J(self.cfg)
             self.gbm = lgb.Booster(model_file=os.path.join(

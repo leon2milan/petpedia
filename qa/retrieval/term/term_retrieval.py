@@ -23,21 +23,21 @@ class TermRetrieval():
     def search(self, query, mode, is_rough, limit=None):
         if mode == 'BEST_MATCH':
             if self.cfg.RETRIEVAL.USE_ES:
-                return self.__seek_es(query, is_rough, is_exact=True)
+                return self.__seek_es(query, is_rough, is_exact=True)[:limit]
             else:
                 return self.__search_best_match(query,
                                                 is_rough=is_rough,
                                                 limit=limit)
         elif mode == 'WELL_MATCH':
             if self.cfg.RETRIEVAL.USE_ES:
-                return self.__seek_es(query, is_rough)
+                return self.__seek_es(query, is_rough)[:limit]
             else:
                 return self.__search_well_match(query,
                                                 is_rough=is_rough,
                                                 limit=limit)
         elif mode == 'PART_MATCH':
             if self.cfg.RETRIEVAL.USE_ES:
-                return self.__seek_es(query, is_rough)
+                return self.__seek_es(query, is_rough)[:limit]
             else:
                 return self.__search_partmatch(query,
                                                is_rough=is_rough,
@@ -47,7 +47,7 @@ class TermRetrieval():
 
     def __seek_es(self, term, is_rough, is_exact=False):
         row = 'question_rough_cut' if is_rough else 'question_fine_cut'
-        term = " ".join([x[0] for x in term]) if isinstance(term, list) else term
+        # term = " ".join([x[0] for x in term]) if isinstance(term, list) else term
         if is_exact:
             return self.es.exact_search(self.cfg.RETRIEVAL.ES_INDEX,
                                         'question', term)
