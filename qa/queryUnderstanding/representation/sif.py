@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from collections import Counter
-from sklearn.decomposition import PCA, IncrementalPCA
+from sklearn.decomposition import IncrementalPCA
 from config import get_cfg
 from qa.queryUnderstanding.representation import W2V, Embedding, REPRESENTATION_REGISTRY
 from qa.tools.logger import setup_logger
@@ -14,9 +14,9 @@ logging = setup_logger()
 
 @REPRESENTATION_REGISTRY.register()
 @Singleton
-class SIF(type(Embedding)):
+class SIF(Embedding):
     def __init__(self, cfg, is_rough=False):
-        super(Embedding, self).__init__(cfg)
+        Embedding.__init__(self, cfg)
         self.a = self.cfg.REPRESENTATION.SIF.A
         self.rmpc = self.cfg.REPRESENTATION.SIF.RMPC
         self.is_rough = is_rough
@@ -137,7 +137,8 @@ class SIF(type(Embedding)):
         return emb
 
     def get_embedding_helper(self, s):
-        s, m = self.seq2weight([s])
+        s = [s] if isinstance(s, str) else s
+        s, m = self.seq2weight(s)
         return self.getEmb(s, m)
 
     def similarity(self, s1, s2):
@@ -179,7 +180,7 @@ class SIF(type(Embedding)):
             X1 = self.getSeqs(s)
             seq.append(X1)
 
-        seq, mask = SIF.prepare_data(seq)
+        seq, mask = SIF.prepare_data.__func__(seq)
         weight = np.zeros(seq.shape).astype('float32')
         for i in range(seq.shape[0]):
             for j in range(seq.shape[1]):

@@ -32,7 +32,17 @@ class DuringGuide:
     def build(self):
         qa = pd.DataFrame(
             list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
-        qa = qa[qa['answer'] != ''].reset_index(drop=True)
+        qa['len'] = qa['question'].apply(len)
+        def substringSieve(string_list):
+            string_list.sort(key=lambda s: len(s), reverse=True)
+            out = []
+            for s in string_list:
+                if not any([o.startswith(s) for o in out]):
+                    out.append(s)
+            return out
+
+        query = qa[(qa['len'] <= 12) & (qa['len'] >= 3)]['question'].tolist()
+        query = substringSieve(query)
         merge_all = reduce(lambda a, b: dict(a, **b), self.specialize.values())
         entity = pd.DataFrame(
             [re.sub(r'\（.*\）', '', x) for x in merge_all.keys() if x] +
@@ -42,7 +52,7 @@ class DuringGuide:
         prefix = []
         for word in entity:
             prefix.extend(DuringGuide.generate_prefix(word, with_pinyin=True))
-        for sent in qa['question'].values.tolist():
+        for sent in query:
             prefix.extend(DuringGuide.generate_prefix(sent))
 
         query_suggest = pd.DataFrame(prefix, columns=['sub_query', 'query'])
@@ -62,7 +72,6 @@ class DuringGuide:
 
 
 if __name__ == '__main__':
-
     cfg = get_cfg()
     dg = DuringGuide(cfg)
     dg.build()

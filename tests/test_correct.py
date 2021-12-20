@@ -49,4 +49,4 @@ class CorrectTest(unittest.TestCase):
         for x in self.text:
             e_pos, candidate, score = self.model_tester.correct(x)
             output.append((e_pos, candidate, round(score, 2)))
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

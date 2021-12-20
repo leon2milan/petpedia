@@ -13,4 +13,4 @@ class FileTest(unittest.TestCase):
         output = []
         for x in self.files:
             output.append(Path(x).stat().st_size)
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

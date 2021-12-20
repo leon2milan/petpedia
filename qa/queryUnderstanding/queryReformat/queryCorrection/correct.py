@@ -361,7 +361,7 @@ class SpellCorrection(object):
                 if uni_score > max_score:
                     max_score = uni_score
                     can = x
-            return ((0, len(text)), can, max_score)
+            return ((0, len(text)), can, 0.0 if math.isinf(max_score) else max_score)
         # entity pinyin匹配
         candidates = self.py.pinyin_candidate(text, 0, method='entity')
         if candidates:
@@ -446,7 +446,8 @@ if __name__ == '__main__':
         '我想找哥医生',
         "哈士奇老拆家怎么办",
         "狗狗发烧怎么办",
-        "犬瘟热"
+        "犬瘟热",
+        "hello"
     ]
     tt = []
     for t in text:

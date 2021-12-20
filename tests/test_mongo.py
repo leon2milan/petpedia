@@ -14,4 +14,4 @@ class ModelTest(unittest.TestCase):
         output = []
         for i in self.files:
             output.append(len(list(self.mongo.find(i, {}))))
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

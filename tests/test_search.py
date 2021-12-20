@@ -31,4 +31,4 @@ class SearchTest(unittest.TestCase):
             else:
                 output.append([])
         logger.info(output)
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

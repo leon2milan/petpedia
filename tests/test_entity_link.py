@@ -23,4 +23,4 @@ class EntitylinkTest(unittest.TestCase):
         output = []
         for x in self.text:
             output.append(self.model_tester.entity_link(x))
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

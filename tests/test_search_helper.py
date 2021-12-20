@@ -14,7 +14,7 @@ class SearchhelperTest(unittest.TestCase):
             '怎么训练金毛狗狗握手', '狗狗驱虫要注意什么', '小狗呕吐拉稀怎么办', '猫得了猫藓怎么治', '犬细小病毒的症状'
         ]
         output = [x['doc']['question'] for x in self.model_tester.hot_query()]
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)
 
     def test_sensetive(self):
         expect_output = [(True, ['习大大']), (False, [])]
@@ -22,4 +22,4 @@ class SearchhelperTest(unittest.TestCase):
         for x in self.text:
             output.append(self.model_tester.sensetive_detect(x))
 
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

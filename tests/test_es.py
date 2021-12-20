@@ -14,4 +14,4 @@ class ModelTest(unittest.TestCase):
         output = []
         for idx in self.index:
             output.append(self.es.es.count(index=idx)['count'])
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

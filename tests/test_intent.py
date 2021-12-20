@@ -20,4 +20,4 @@ class FasttextTest(unittest.TestCase):
         output = []
         for x in self.text:
             output.append(self.model_tester.predict(x)[0])
-        self.assertEquals(output, expect_output)
+        self.assertEqual(output, expect_output)

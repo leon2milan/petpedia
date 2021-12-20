@@ -40,6 +40,7 @@ class Fasttext(object):
         qa = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
         qa = flatten(qa['question_rough_cut'].apply(
             lambda x: [y for y in x if y not in self.stopwords]).tolist())
+        qa = [x for x in list(set(qa)) if len(x) > 1]
         for word in qa + entity_word:
             self.ah.add_word(word)
         self.ah.make()
@@ -129,7 +130,7 @@ if __name__ == '__main__':
 
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
-        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎'
+        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello'
     ]
 
     for x in text:
