@@ -44,7 +44,7 @@ class ModelTest(unittest.TestCase):
         for x in self.files:
             all_file = os.path.join(self.basic_file, x)
             for file in os.listdir(all_file):
-                if not os.path.isdir(os.path.join(all_file, file)):
+                if not os.path.isdir(os.path.join(all_file, file)) and not os.path.join(all_file, file).endswith('txt'):
                     p = str(os.path.relpath(os.path.join(all_file, file)))
                     output = Path(os.path.join(all_file, file)).stat().st_size
                     self.assertEqual(output, expect_output[p])

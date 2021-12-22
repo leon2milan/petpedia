@@ -33,22 +33,37 @@ class Fasttext(object):
 
     def build_detector(self):
         self.ah = Ahocorasick()
-        entity_word = flatten([[k, v] for k, v in reduce(
-            lambda a, b: dict(a, **b), self.specialize.values()).items()])
-        qa = pd.DataFrame(
-            list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
-        qa['question_cut'] = qa['question'].progress_apply(
-            lambda x: self.seg.cut(x, mode='rank', is_rough=True))
-        qa['question_cut'] = qa['question_cut'].apply(
-            lambda x: list(zip(x[0], x[1], x[2])))
-        qa['question_cut'] = qa['question_cut'].apply(
-            lambda x:
-            [i[0] for i in x if i[1] in ['n', 'nz', 'v', 'vn', 'nw']])
+        if os.path.exists(
+                os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')):
+            qa = [
+                x.strip() for x in open(
+                    os.path.join(self.cfg.INTENT.MODEL_PATH,
+                                 'detector.txt')).readlines()
+            ]
 
-        qa = flatten(qa['question_cut'].apply(
-            lambda x: [y for y in x if y not in self.stopwords]).tolist())
-        qa = [x for x in list(set(qa)) if len(x) > 1]
-        for word in qa + entity_word:
+        else:
+            entity_word = flatten([[k, v] for k, v in reduce(
+                lambda a, b: dict(a, **b), self.specialize.values()).items()])
+            qa = pd.DataFrame(
+                list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
+            qa['question_cut'] = qa['question'].progress_apply(
+                lambda x: self.seg.cut(x, mode='rank', is_rough=True))
+            qa['question_cut'] = qa['question_cut'].apply(
+                lambda x: list(zip(x[0], x[1], x[2])))
+            qa['question_cut'] = qa['question_cut'].apply(
+                lambda x:
+                [i[0] for i in x if i[1] in ['n', 'nz', 'v', 'vn', 'nw']])
+
+            qa = flatten(qa['question_cut'].apply(
+                lambda x: [y for y in x if y not in self.stopwords]).tolist())
+            qa = [x for x in list(set(qa)) if len(x) > 1]
+            qa = qa + entity_word
+            with open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt'),
+                      'w') as f:
+                for i in qa:
+                    f.write(i + '\n')
+
+        for word in qa:
             self.ah.add_word(word)
         self.ah.make()
 

@@ -418,7 +418,7 @@ class SpellCorrection(object):
                 e_pos = (err['st_pos'], err['end_pos'])
         logger.debug('rank takes: {}'.format(time.time() - start))
         # if not can:
-        #     _, detail = pycorrector.correct(t)
+        #     _, detail = pycorrector.correct(text)
         #     if detail:
         #         e_pos = (detail[0][2], detail[0][3])
         #         can = detail[0][1]
