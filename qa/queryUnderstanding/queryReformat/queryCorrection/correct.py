@@ -73,17 +73,17 @@ class SpellCorrection(object):
         self.same_stroke = Words(self.cfg).get_samestroke
         self.specialization = Words(self.cfg).get_specializewords
         self.bk = BKTree(self.cfg)
-        # try:
-        #     self.bk.builder()
-        # except:
-        #     text = [
-        #         "".join(x.strip().split())
-        #         for x in open(cfg.BASE.ROUGH_WORD_FILE).readlines()
-        #     ]
-        #     self.bk.builder(text)
-        #     del text
-        #     gc.collect()
-        self.word_trie = self.load_Trie('word')
+        try:
+            self.bk.builder()
+        except:
+            text = [
+                "".join(x.strip().split())
+                for x in open(cfg.BASE.ROUGH_WORD_FILE).readlines()
+            ]
+            self.bk.builder(text)
+            del text
+            gc.collect()
+
         pycorrector.correct('感帽')
 
     def load_Trie(self, name):
@@ -262,17 +262,17 @@ class SpellCorrection(object):
                         })
 
         # bktree 检索整句
-        bk_res = self.bk.find("".join(text), 2)
-        for x in bk_res:
-            err_pos.append({
-                'word': x,
-                'st_pos': 0,
-                'end_pos': len(text),
-                'pos': (0, len(text)),
-                'candidate': x,
-                'err_score': 3.0,
-                'source': 'bktree'
-            })
+        # bk_res = self.bk.find("".join(text), 2)
+        # for x in bk_res:
+        #     err_pos.append({
+        #         'word': x,
+        #         'st_pos': 0,
+        #         'end_pos': len(text),
+        #         'pos': (0, len(text)),
+        #         'candidate': x[1],
+        #         'err_score': 3.0,
+        #         'source': 'bktree'
+        #     })
         logger.debug('err_pos: {}'.format(err_pos))
         if err_pos:
             err_pos = pd.DataFrame(err_pos).groupby(
@@ -387,7 +387,6 @@ class SpellCorrection(object):
             # TODO 使用分类模型
             # lm model ppl 变化情况
             score = err['err_score']
-
             kmp = VatiantKMP(0.5)
             kmp.indexKMP(query_ssc, self.tsc.getSSC(err['candidate'], 'ALL'),
                          'ALL', self.tsc.strokesDictReverse)
