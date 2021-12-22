@@ -11,6 +11,7 @@ from gensim.models import KeyedVectors, word2vec
 from lmdb_embeddings.writer import LmdbEmbeddingsWriter
 from lmdb_embeddings.reader import LruCachedLmdbEmbeddingsReader
 from qa.queryUnderstanding.querySegmentation import Segmentation
+from lmdb_embeddings.exceptions import MissingWordError
 from tqdm import tqdm
 
 tqdm.pandas(desc="word2vec")
@@ -68,7 +69,10 @@ class W2V(Embedding):
         return (words, np.array(We))
 
     def get_embedding_helper(self, s):
-        return Embedding.wam(s, self.model)
+        return Embedding.wam(s, self.model,
+                             self.cfg.REPRESENTATION.WORD2VEC.USE_LMDB,
+                             self.cfg.REPRESENTATION.WORD2VEC.POOLING,
+                             self.cfg.REPRESENTATION.WORD2VEC.EMBEDDING_SIZE)
 
     def save(self, model, path):
         model.wv.save_word2vec_format(path, binary=False)

@@ -1,5 +1,4 @@
 import os
-from pickle import FALSE, TRUE
 from .config import CfgNode as CN
 from config import ROOT
 from qa.tools.utils import get_host_ip
@@ -120,6 +119,7 @@ _C.REPRESENTATION = CN()
 
 _C.REPRESENTATION.WORD2VEC = CN()
 _C.REPRESENTATION.WORD2VEC.EMBEDDING_SIZE = 300
+_C.REPRESENTATION.WORD2VEC.POOLING = 'avg'  # one of ['avg', 'sum']
 _C.REPRESENTATION.WORD2VEC.MIN_COUNT = 5
 _C.REPRESENTATION.WORD2VEC.WINDOW = 5
 _C.REPRESENTATION.WORD2VEC.USE_LMDB = True
@@ -263,6 +263,9 @@ _C.RETRIEVAL.PART_MATCH_RATIO = 0.5
 _C.RETRIEVAL.DO_NORMALIZE = False
 _C.RETRIEVAL.DO_CORRECT = False
 _C.RETRIEVAL.DO_EXPANSION = False
+_C.RETRIEVAL.DO_TERM_WEIGHT = False
+_C.RETRIEVAL.DO_CLOSE_WEIGHT = False
+_C.RETRIEVAL.TIME_PERFORMENCE = False
 
 _C.RETRIEVAL.BEST_ROUTE = CN()
 _C.RETRIEVAL.BEST_ROUTE.DO_KBQA = False
@@ -313,8 +316,10 @@ _C.INTENT.MODEL_PATH = os.path.join(ROOT, 'models/intent/')
 
 # 匹配
 _C.MATCH = CN()
-_C.MATCH.METHODS = ['edit', 'jaccard', 'cosine'
-                    ]  # one of ['cosine', 'edit', 'jaccard', 'simcse'] or all
+# one of ['cosine', 'edit', 'jaccard', 'simcse', 'ts_ss', 'ts', 'ss'] or all
+# ts ss in paper <A Hybrid Geometric Approach for Measuring Similarity Level Among Documents and Document Clustering>
+# or https://arxiv.org/pdf/1911.00262.pdf or https://github.com/taki0112/Vector_Similarity
+_C.MATCH.METHODS = ['edit', 'jaccard', 'cosine']  
 
 _C.MATCH.BERT = CN()
 _C.MATCH.BERT.MODEL_PATH = os.path.join(ROOT, 'models/matching/')

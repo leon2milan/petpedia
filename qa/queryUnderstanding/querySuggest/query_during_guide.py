@@ -33,16 +33,8 @@ class DuringGuide:
         qa = pd.DataFrame(
             list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
         qa['len'] = qa['question'].apply(len)
-        def substringSieve(string_list):
-            string_list.sort(key=lambda s: len(s), reverse=True)
-            out = []
-            for s in string_list:
-                if not any([o.startswith(s) for o in out]):
-                    out.append(s)
-            return out
 
         query = qa[(qa['len'] <= 12) & (qa['len'] >= 3)]['question'].tolist()
-        query = substringSieve(query)
         merge_all = reduce(lambda a, b: dict(a, **b), self.specialize.values())
         entity = pd.DataFrame(
             [re.sub(r'\（.*\）', '', x) for x in merge_all.keys() if x] +

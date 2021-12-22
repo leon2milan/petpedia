@@ -306,6 +306,7 @@ class AdvancedSearch():
 
         result = self.bs.search(seek_query_list)
         # 计算摘要
+
         self.__abstract(seek_query_list, result)
 
         self.print_result(result)

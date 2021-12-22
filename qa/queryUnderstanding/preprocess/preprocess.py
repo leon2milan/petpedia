@@ -72,7 +72,7 @@ def cut_sentence_with_quotation_marks(text):
     return list
 
 
-def clean(s, is_tran=False, has_emogi=False):
+def clean(s, is_tran=False, has_emogi=False, keep_zh=False):
     s = re.sub('\s+', '', s)
     s = cap2lower(s)
     s = full2half(s)
@@ -80,6 +80,8 @@ def clean(s, is_tran=False, has_emogi=False):
         s = trans2simple(s)
     if has_emogi:
         s = demojize(s)
+    if keep_zh:
+        s = re.sub('[^\u4e00-\u9fa5]+', '', 's')
     return s
 
 

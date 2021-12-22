@@ -132,6 +132,7 @@ class EntityLink(object):
     def __init__(self, cfg):
         self.cfg = cfg
         self.w2v = W2V(self.cfg, is_rough=True)
+        self.word = Words(self.cfg)
         self.normalization = Normalization(self.cfg)
         self.seg = Segmentation(self.cfg)
         if self.cfg.ENTITYLINK.USE_KG:
@@ -147,17 +148,17 @@ class EntityLink(object):
             if not any(x in dup and x != dup for dup in normalize)
         ]
         species = '（犬）' if len([
-            self.normalization.get_class(y) for x in normalize
-            for y in self.normalization.get_name(x)
+            self.word.get_class(y) for x in normalize
+            for y in self.word.get_name(x)
         ]) > 0 else '（猫）'
         logger.debug(f"query: {query}, normalize: {normalize}")
         normalize = [
-            y for x in normalize for y in self.normalization.get_name(x)
+            y for x in normalize for y in self.word.get_name(x)
             if (len(re.findall(r'（.*）', y)) > 0 and re.findall(r'（.*）', y)[0]
                 == species) or (len(re.findall(r'（.*）', y)) == 0)
         ]
         logger.debug(f"query: {query}, normalize1: {normalize}")
-        normalize = [(x, self.normalization.get_class(x)) for x in normalize
+        normalize = [(x, self.word.get_class(x)) for x in normalize
                      if x]
         logger.debug(f"query: {query}, normalize2: {normalize}")
         return list(set(normalize))
@@ -220,11 +221,11 @@ class EntityLink(object):
         logger.debug(f"query: {query}, extracted: {extracted}")
         # candidate = [x if x['entity'] in extracted else x['score'] * 0.5 for x in candidate]
         # candidate = sorted(candidate, key=lambda x: x['score'])
-        disease = [x for x in extracted if self.normalization.is_disease(x[0])]
+        disease = [x for x in extracted if self.word.is_disease(x[0])]
         logger.debug(f"query: {query}, disease: {disease}")
         if len(disease) > 0:
             return disease[0]
-        symptom = [x for x in extracted if self.normalization.is_symptom(x[0])]
+        symptom = [x for x in extracted if self.word.is_symptom(x[0])]
         logger.debug(f"query: {query}, symptom: {symptom}")
         if len(symptom) > 0:
             return symptom[0]

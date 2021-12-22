@@ -32,31 +32,22 @@ class ES:
         res = self.es.search(index=_index, body=_query)
         hits = res['hits']['total']['value']
         res = [{
-            'es_id':
-            x['_id'],
-            'index':
-            x["_source"]['_idx'],
-            'docid':
-            x["_source"]['question'],
+            'es_id': x['_id'],
+            'index': x["_source"]['_idx'],
+            'docid': x["_source"]['question'],
             'doc': {
                 'question': x["_source"]['question'],
-                'answer': x["_source"]['answer']
+                'answer': x["_source"]['answer'],
+                'question_rough_cut':
+                x["_source"]['question_rough_cut'].split(),
+                'question_fine_cut': x["_source"]['question_fine_cut'].split()
             },
-            'score':
-            x['_score'],
-            'hit_words': [
-                "".join(
-                    re.findall(re.compile(u"[\u4e00-\u9fa5]+"),
-                               y['description']))
-                for y in x['_explanation']['details']
-            ],
+            'score': x['_score'],
             "tag": {
-                'species':
-                self.cs.understanding(x["_source"]['question'])['SPECIES'],
-                'sex':
-                self.cs.understanding(x["_source"]['question'])['SEX'],
-                'age':
-                self.cs.understanding(x["_source"]['question'])['AGE'],
+                k.lower(): v
+                for k, v in self.cs.understanding(x["_source"]
+                                                  ['question']).items()
+                if k in ['SPECIES', 'SEX', 'AGE']
             }
         } for x in res['hits']['hits']]
         return res
@@ -70,13 +61,12 @@ class ES:
                         }}
                     }},
                 "size": {self.cfg.RETRIEVAL.LIMIT},
-                "_source": [ "_idx", "question", "answer"],
-                "explain": "true"
+                "_source": [ "_idx", "question", "answer", "question_rough_cut", "question_fine_cut"]
                 }}
                 """
         return self.search(_index, query)
 
-    def fuzzy_search(self, _index, _row, _query:list):
+    def fuzzy_search(self, _index, _row, _query: list):
         query = f"""
                 {{
                 "query":{{
@@ -85,8 +75,7 @@ class ES:
                         }}
                     }},
                 "size": {self.cfg.RETRIEVAL.LIMIT},
-                "_source": [ "_idx", "question", "answer"],
-                "explain": "true"
+                "_source": [ "_idx", "question", "answer", "question_rough_cut", "question_fine_cut"]
                 }}
                 """
         return self.search(_index, query)

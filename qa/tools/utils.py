@@ -3,7 +3,6 @@ import functools
 from qa.tools.logger import setup_logger
 import socket
 
-
 logger = setup_logger()
 
 # class Singleton(type):
@@ -15,6 +14,15 @@ logger = setup_logger()
 #             cls._instances[key] = super(Singleton,
 #                                         cls).__call__(*args, **kwargs)
 #         return cls._instances[key]
+
+
+def substringSieve(string_list):
+    string_list.sort(key=lambda s: len(s), reverse=True)
+    out = []
+    for s in string_list:
+        if not any([o.startswith(s) for o in out]):
+            out.append(s)
+    return out
 
 
 def get_host_ip():
@@ -152,3 +160,17 @@ class PrintTime:
         t2 = time.process_time()
         logger.debug('函数运行{}秒。'.format(t2 - t1))
         return result
+
+
+def show_memory(var, unit='MB', threshold=1):
+    '''查看变量占用内存情况
+
+    :param unit: 显示的单位，可为`B`,`KB`,`MB`,`GB`
+    :param threshold: 仅显示内存数值大于等于threshold的变量
+    '''
+    from sys import getsizeof
+    scale = {'B': 1, 'KB': 1024, 'MB': 1048576, 'GB': 1073741824}[unit]
+    memory = eval("getsizeof({})".format(var)) // scale
+    if memory >= threshold:
+        print(memory, unit)
+            

@@ -3,17 +3,13 @@
 获取重要词       get_important_words
 获取近义词       get_synonym_words
 获取停用词
-检测敏感词       sensitive_words_find
-检测重要词       important_words_find
-同义词替换       synonym_replace
-停用词去除
-dfa查找         dfa
 """
 from qa.tools import Singleton, setup_logger, flatten
 from qa.tools.mongo import Mongo
 import os
 import pandas as pd
 from functools import reduce
+from collections import defaultdict
 
 logger = setup_logger()
 
@@ -40,6 +36,66 @@ class Words():
             self.same_pinyin = None  # 同音
             self.same_stroke = None  # 同型
             self.init()
+
+    @staticmethod
+    def is_chinese(uchar):
+        """判断一个unicode是否是汉字"""
+        return '\u4e00' <= uchar <= '\u9fa5'
+
+    @staticmethod
+    def is_chinese_string(string):
+        """判断是否全为汉字"""
+        return all(Words.is_chinese(c) for c in string)
+
+    @staticmethod
+    def is_number(uchar):
+        """判断一个unicode是否是数字"""
+        return u'u0030' <= uchar <= u'u0039'
+
+    @staticmethod
+    def is_number_string(string):
+        """判断是否全部是数字"""
+        return all(Words.is_number(c) for c in string)
+
+    @staticmethod
+    def is_alphabet(uchar):
+        """判断一个unicode是否是英文字母"""
+        return u'u0041' <= uchar <= u'u005a' or u'u0061' <= uchar <= u'u007a'
+
+    @staticmethod
+    def is_alphabet_string(string):
+        """判断是否全部为英文字母"""
+        return all('a' <= c <= 'z' for c in string)
+
+    @staticmethod
+    def is_other(uchar):
+        """判断是否非汉字，数字和英文字符"""
+        return not (Words.is_chinese(uchar) or Words.is_number(uchar)
+                    or Words.is_alphabet(uchar))
+
+    def is_stopword(self, s):
+        return s in self.stop_words
+
+    def is_disease(self, s):
+        return s in self.__disease
+
+    def is_symptom(self, s):
+        return s in self.__symptom
+
+    def is_dog(self, s):
+        return s in self.__dog
+
+    def is_cat(self, s):
+        return s in self.__cat
+
+    def get_alias(self, x):
+        return self.__name2alias.get(x, "")
+
+    def get_name(self, x):
+        return self.__alias2name.get(x, "")
+
+    def get_class(self, x):
+        return self.__name2class.get(x, "")
 
     @property
     def get_stopwords(self):
@@ -84,15 +140,10 @@ class Words():
         pass
 
     def get_sensitive_words(self):
-        """从mysql中获取敏感词表
-        :param mysql: obj
+        """从 mongo 中获取敏感词表
+        :param mongo: obj
         :return: dict {subsystem1:[word1,word2,..], subsystem2:[word11,word12...],...}
         """
-        # self.sensitive_words = flatten([
-        #     x.strip() for y in os.listdir(self.cfg.DICTIONARY.SENSITIVE_PATH)
-        #     for x in open(os.path.join(self.cfg.DICTIONARY.SENSITIVE_PATH,
-        #                                y)).readlines()
-        # ])
         sw = pd.DataFrame(
             list(self.mongo.find(self.cfg.BASE.SENSETIVE_COLLECTION,
                                  {})))[['word']]
@@ -122,7 +173,9 @@ class Words():
                 res[i] = dict(zip(tmp['han_structure'], tmp[i]))
                 res[i]['0'] = '0'
             else:
-                res[i] = dict(zip(tsc.iloc[tsc[i].dropna().index]['content'].dropna(), tsc[i].dropna()))
+                res[i] = dict(
+                    zip(tsc.iloc[tsc[i].dropna().index]['content'].dropna(),
+                        tsc[i].dropna()))
         self.tsc = res
 
     @staticmethod
@@ -133,34 +186,27 @@ class Words():
         }
 
     def get_specialize_words(self):
-        # cat = pd.read_csv(
-        #     self.cfg.BASE.CAT_DATA)[['chinese_name',
-        #                              'chinese_alias']].fillna('')
-        # dog = pd.read_csv(
-        #     self.cfg.BASE.DOG_DATA)[['chinese_name',
-        #                              'chinese_alias']].fillna('')
-        # sym = pd.read_csv(
-        #     self.cfg.BASE.SYMPTOM_DATA).dropna(how='all').fillna('')
-        # ill = {
-        #     x.strip(): x.strip()
-        #     for x in open(self.cfg.BASE.DISEASE_DATA).readlines()
-        # }
-        # cat = dict(zip(cat['chinese_name'].values,
-        #                cat['chinese_alias'].values))
-        # dog = dict(zip(dog['chinese_name'].values,
-        #                dog['chinese_alias'].values))
-        # sym = dict(zip(sym['symtom'].values, sym['alias'].values))
-        # self.specialize_words = {
-        #     'CAT': Words.normalize.__func__(cat),
-        #     'DOG': Words.normalize.__func__(dog),
-        #     'SYMPTOMS': Words.normalize.__func__(sym),
-        #     'DISEASE': Words.normalize.__func__(ill)
-        # }
         sp = pd.DataFrame(
             list(self.mongo.find(self.cfg.BASE.SPECIALIZE_COLLECTION,
                                  {})))[['name', 'alias', 'type']]
         self.specialize_words = sp.groupby('type')['name', 'alias'].apply(
             lambda x: dict(zip(x['name'], x['alias']))).to_dict()
+
+        self.__disease = list(self.specialize_words.get('DISEASE', {}).keys())
+        self.__symptom = list(self.specialize_words.get('SYMPTOMS', {}).keys())
+        self.__dog = list(self.specialize_words.get('DOG', {}).keys())
+        self.__cat = list(self.specialize_words.get('CAT', {}).keys())
+        self.__name2class = {
+            n: c
+            for c, b in self.specialize_words.items() for n, _ in b.items()
+        }
+        self.__name2alias = reduce(lambda a, b: dict(a, **b),
+                                   self.specialize_words.values())
+        tmp = [(j if j else k, k) for k, v in self.__name2alias.items()
+               for j in v] + [(k, k) for k, _ in self.__name2alias.items()]
+        self.__alias2name = defaultdict(list)
+        for k, v in tmp:
+            self.__alias2name[k].append(v)
 
         new_word_path = os.path.join(self.cfg.BASE.DATA_PATH,
                                      'dictionary/segmentation/new_word.csv')
@@ -201,183 +247,6 @@ class Words():
                 self.cfg.DICTIONARY.SAME_STROKE_PATH).readlines()[1:]
         }
 
-    def words_reload(self):
-        """ 通过信号控制 sensitive_words important_words synonym_words random_resp 的更新删除
-        :param mysql:
-        :return: boolean
-        """
-        return True
-
-    def synonym_replace(self, question, tables):
-        """《同义词》替换
-        :param question:
-        :param tables: list 同义词列表
-        :return: msg
-        """
-        raw = question
-        # 方法1
-        # pass_words = []
-        # for table in tables:
-        #     if not table:
-        #         continue
-        #     for replace_list, root_word in table:  # ([a, b, c], d)  d类似词根, a, b, c 为别名
-        #         for w in replace_list:
-        #             if w in question and w != root_word and w not in pass_words:
-        #                 question = question.replace(w, root_word)
-        #                 pass_words.append(root_word)
-        # return question
-        # 方法2
-        for table in tables:
-            if not table:
-                continue
-            for word_list in table:  # (a,b,c,d) 同义词列表, d最长
-                holder = "!"
-                root, t = word_list  # root:词根   t: 排好顺序的同义词列表
-                for word in sorted(t, reverse=False):  # 优先替换长度长的
-                    if root not in question:  # add by ian，12-13
-                        question = question.replace(word, holder)
-                question = question.replace(holder, root)
-
-        if raw != question:
-            logger.debug("同义词　{} -> {}".format(raw, question))
-        return question
-
-    def sensitive_words_find(self, question, tables):
-        """ 《敏感词》检测 找到一个就返回
-        :param question: str
-        :param tables: dict
-        :return: str
-        """
-        for table in tables:
-            if not table:
-                continue
-            for word in table:
-                if word in question:
-                    # 防止曹操被过滤
-                    if len(word) == 1:
-                        if word == question:
-                            return word
-                    else:
-                        return word
-
-    def important_words_find(self, question, tables):
-        """ 检查通用性《重要词》, 子系统自己的通用词 ,返回尽可能多的重要词
-        :param question:
-        :param tables:
-        :return: []
-        """
-        ret = []
-        for table in tables:
-            if not table:
-                continue
-            for word in table:
-                if word in question:
-                    ret.append(word)
-        return ret
-
-    def stop_words_delete(self, question, tables):
-        """
-        :param question:
-        :param tables:
-        :return:
-        """
-        # if len(question) <= 3:  # 太短的语句不做停用词删除处理
-        #     return question
-        if not question:
-            return ''
-        question = question.translate(trantab)
-        raw = question
-        for table in tables:
-            if not table:
-                continue
-            for word in table:
-                if word in question:
-                    # logger.debug("question={} 去除停用词:{}".format(question, word))
-                    question = question.replace(word, "")
-        if question != raw:
-            logger.debug("去除停用词 {} --> {}".format(raw, question))
-        return question or raw
-
-    def rebuild(self, question):
-        tables2 = self.synonym_words
-        tables3 = self.stop_words
-        # tables3 = [self.stop_words.get(comm), self.stop_words.get(subsystem_id)]
-        # 同义词替换
-        temp = self.synonym_replace(question, tables2)
-
-        # 去除停用词
-        temp = self.stop_words_delete(temp, tables3)
-
-        # 同义词替换
-        # tables2 = [self.synonym_words.get(comm), self.synonym_words.get(subsystem_id)]
-        temp = self.synonym_replace(temp, tables2)
-        # logger.debug("rebuild 结果: {} --> {}".format(question, temp))
-        # 英文字符转小写
-        temp = temp.lower()
-        return temp
-
-    def stop_words_delete2(self, fenci_list, tables):
-        """
-        :param fenci_list:
-        :param tables:
-        :return:
-        """
-        for table in tables:
-            if not table:
-                continue
-            for word in table:
-                fenci_list = [_ for _ in fenci_list if _ != word]
-        return fenci_list
-
-    def gen_sentences(self, fenci_list, subsystem_id, comm):
-        """根据停用词和同义词尽可能多地生成同义句
-        :param fenci_list: 句子分词后的 词语列表   ['我', '要', '取钱']
-        :param subsystem_id: 子系统
-        :param comm: 公共子系统
-        :return: 句子列表 [['要 取钱'], ['我 要 取钱'], ['我 想要 取钱']]
-        """
-
-        tables2 = self.synonym_words
-        tables3 = self.stop_words
-        new_fenci_list = []
-        for i, w in enumerate(
-                fenci_list):  # fenci_list -> new_fenci_list 保证顺序同时去重
-            if w not in fenci_list[:i]:
-                new_fenci_list.append(w)
-        qs = set()
-        # 导航类提取关键词语作为同义句 -- 适当扩展容易混淆的地点
-        sentence = ''.join(new_fenci_list)
-        for place in ('迎宾点', '贵宾区', '贵宾点', '理财区'):
-            if place in sentence:
-                qs.add(place)
-
-        # 导航类提取关键词语 end
-        def _gen(ss):
-            # ss: list  ['我', '要', '取钱']
-            qs.add(' '.join(ss))
-            for table in tables2:
-                if not table:
-                    continue
-                for word_list in table:  # (a,b,c,d) 同义词列表, d最长
-                    holder = "!"
-                    word_list = flatten(word_list)
-                    word_list.sort(key=len, reverse=True)
-                    s = ss
-                    for word in word_list:
-                        s = [_ if _ != word else holder for _ in s]
-                    for word in word_list[::-1]:
-                        qs.add(' '.join(
-                            [_ if _ != holder else word for _ in s]))
-
-        _gen(new_fenci_list)
-        _gen(self.stop_words_delete2(new_fenci_list, tables3))
-        return list(qs)
-
 
 if __name__ == "__main__":
     pass
-    # w = Words(clients.mysql)
-    # w2 = Words(clients.mysql)
-    # print(id(w))
-    # print(id(w2))
-    # print(w.reload())

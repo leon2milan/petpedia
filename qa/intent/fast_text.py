@@ -33,12 +33,19 @@ class Fasttext(object):
 
     def build_detector(self):
         self.ah = Ahocorasick()
-        entity_word = flatten([
-            v for k, v in reduce(lambda a, b: dict(a, **b),
-                                 self.specialize.values()).items()
-        ])
-        qa = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
-        qa = flatten(qa['question_rough_cut'].apply(
+        entity_word = flatten([[k, v] for k, v in reduce(
+            lambda a, b: dict(a, **b), self.specialize.values()).items()])
+        qa = pd.DataFrame(
+            list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
+        qa['question_cut'] = qa['question'].progress_apply(
+            lambda x: self.seg.cut(x, mode='rank', is_rough=True))
+        qa['question_cut'] = qa['question_cut'].apply(
+            lambda x: list(zip(x[0], x[1], x[2])))
+        qa['question_cut'] = qa['question_cut'].apply(
+            lambda x:
+            [i[0] for i in x if i[1] in ['n', 'nz', 'v', 'vn', 'nw']])
+
+        qa = flatten(qa['question_cut'].apply(
             lambda x: [y for y in x if y not in self.stopwords]).tolist())
         qa = [x for x in list(set(qa)) if len(x) > 1]
         for word in qa + entity_word:

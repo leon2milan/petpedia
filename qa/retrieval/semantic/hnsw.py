@@ -1,18 +1,17 @@
 # -*- coding: UTF-8 -*-
+from time import time
 import hnswlib
 import os
 import pickle
 import numpy as np
 import pandas as pd
-from functools import partial
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.queryUnderstanding.representation import REPRESENTATION_REGISTRY
 from qa.tools.mongo import Mongo
 from qa.tools.logger import setup_logger
 from config import get_cfg
-import gc
+import time
 from abc import ABCMeta, abstractmethod
-from operator import itemgetter
 
 from qa.tools.utils import Singleton
 
@@ -58,6 +57,10 @@ class HNSW(ANN):
         self.emb_size = self.cfg.REPRESENTATION.WORD2VEC.EMBEDDING_SIZE if 'BERT' not in self.cfg.RETRIEVAL.HNSW.SENT_EMB_METHOD else self.cfg.REPRESENTATION.BERT.EMBEDDING_SIZE
 
         self.hnsw = self.load(is_rough=self.is_rough)
+        self.id_map = pd.DataFrame(
+            list(self.mongo.find(self.cfg.BASE.QA_COLLECTION,
+                                 {})))[['_id', 'index']]
+        self.id_map = dict(zip(self.id_map['index'], self.id_map['_id']))
 
     def train(self, data, to_file: str, ids=None):
         '''
@@ -169,7 +172,6 @@ class HNSW(ANN):
         distances = dict(
             zip(labels.reshape(-1).tolist(),
                 distances.reshape(-1).tolist()))
-
         # note: mongo find in return shuffled data.
         res = [[
             {
@@ -184,6 +186,8 @@ class HNSW(ANN):
                 "doc": {
                     'question': item['question'],
                     'answer': item['answer'],
+                    'question_rough_cut': item['question_rough_cut'],
+                    'question_fine_cut': item['question_fine_cut']
                 },
                 "source":
                 'rough' if self.is_rough else 'fine',
@@ -192,11 +196,11 @@ class HNSW(ANN):
                     'sex': item['SEX'],
                     'age': item['AGE'],
                 }
-            }
-            for item in self.mongo.find(self.cfg.BASE.QA_COLLECTION,
-                                        {'index': {
-                                            "$in": labels[i].tolist()
-                                        }}) if
+            } for item in self.mongo.find(self.cfg.BASE.QA_COLLECTION, {
+                '_id': {
+                    "$in": [self.id_map[x] for x in labels[i].tolist()]
+                }
+            }) if
             distances[item['index']] < self.cfg.RETRIEVAL.HNSW.FILTER_THRESHOLD
         ] for i in range(len(labels))]
         return [
@@ -208,38 +212,23 @@ class HNSW(ANN):
 if __name__ == "__main__":
     cfg = get_cfg()
     rough = HNSW(cfg, is_rough=True)
-    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
-                    for y in rough.search(['想', '养', '哈士奇', '应该', '注意'])])
-    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
-                    for y in rough.search(['想', '养', '狗', '应该', '注意'])])
-    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
-                    for y in rough.search(['家', '猫', '半夜', '瞎', '叫唤', '咋办'])])
-    print('rough', [[(x['docid'], x['score'], x['index'], x['tag']) for x in y]
-                    for y in rough.search(['猫', '骨折', '了'])])
-    print('rough',
-          [[(x['docid'], x['score'], x['index']) for x in y]
-           for y in rough.search(
-               ['我', '想', '养', '个', '哈士奇', '，', '应该', '注意', '什么', '？'])])
-    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
-                    for y in rough.search(['狗狗', '容易', '感染', '什么', '疾病'])])
-    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
-                    for y in rough.search(['哈士奇', '老', '拆家'])])
-    print('rough', [[y['docid'] for y in x]
-                    for x in rough.search([['犬细小'], ['哈士奇', '老', '拆', '家']])])
-    print('rough', [[(x['docid'], x['score'], x['index']) for x in y]
-                    for y in rough.search(['哈士奇', '拆家'])])
+    test = [['想', '养', '哈士奇', '应该', '注意'], ['想', '养', '狗', '应该', '注意'],
+            ['家', '猫', '半夜', '瞎', '叫唤', '咋办'], ['猫', '骨折', '了'],
+            ['我', '想', '养', '个', '哈士奇', '，', '应该', '注意', '什么', '？'],
+            ['狗狗', '容易', '感染', '什么', '疾病'], ['哈士奇', '老', '拆家'],
+            [['犬细小'], ['哈士奇', '老', '拆', '家']], ['哈士奇', '拆家']]
+    for x in test:
+        s = time.time()
+        print('query', x, 'rough', [[(x['docid'], x['score'], x['index'])
+                                     for x in y]
+                                    for y in rough.search(x)], 'takes: ',
+              time.time() - s)
 
     fine = HNSW(cfg, is_rough=False)
-    print('fine',
-          [[y['docid'] for y in x] for x in fine.search(['哈士奇', '拆', '家'])])
-    print('fine',
-          [[y['docid'] for y in x] for x in fine.search(['狗', '老', '拆', '家'])])
-    print('fine', [[y['docid'] for y in x]
-                   for x in fine.search(['哈士奇', '老', '拆', '家'])])
-    print('fine', [[y['docid'] for y in x] for x in rough.search(['犬细小'])])
-
-    # know = KNOWLEDGE_ANN(cfg)
-    # print('know', [x['entity'] for x in know.search(['西伯利亚哈士奇犬', '拆家'])])
-    # print('know', [x['entity'] for x in know.search(['哈士奇', '拆', '家'])])
-    # print('know', [x['entity'] for x in know.search(['狗', '老', '拆', '家'])])
-    # print('know', [x['entity'] for x in know.search(['哈士奇', '老', '拆', '家'])])
+    test = [['哈士奇', '拆', '家'], ['狗', '老', '拆', '家'], ['哈士奇', '老', '拆', '家'],
+            ['犬细小']]
+    for x in test:
+        s = time.time()
+        print('fine', [[y['docid'] for y in x] for x in fine.search(x)],
+              'takes: ',
+              time.time() - s)

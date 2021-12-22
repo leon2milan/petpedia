@@ -54,6 +54,12 @@ class Similarity(Matching):
                 score += self.ls.get_score(s1, s2, 'edit')
             elif method == 'cosine':
                 score += self.ss.get_score(s1_list, s2_list, 'cosine')
+            elif method == 'ts_ss':
+                score -= self.ss.get_score(s1_list, s2_list, 'ts_ss')
+            elif method == 'ts':
+                score += self.ss.get_score(s1_list, s2_list, 'ts')
+            elif method == 'ss':
+                score += self.ss.get_score(s1_list, s2_list, 'ss')
             elif method == 'simcse':
                 score += 0.0
             else:
