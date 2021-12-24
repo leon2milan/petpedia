@@ -1,5 +1,4 @@
 from elasticsearch import Elasticsearch
-import re
 from qa.tools import Singleton, setup_logger
 from qa.contentUnderstanding.content_profile import ContentUnderstanding
 
