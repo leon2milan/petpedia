@@ -4,8 +4,12 @@ from qa.queryUnderstanding.querySegmentation import Segmentation
 from lmdb_embeddings.exceptions import MissingWordError
 import numpy as np
 
+__all__ = ['Embedding']
+
 
 class Embedding(metaclass=ABCMeta):
+    __slot__ = ['cfg', 'seg']
+
     def __init__(self, cfg):
         self.cfg = cfg
         self.seg = Segmentation(self.cfg)
@@ -17,15 +21,19 @@ class Embedding(metaclass=ABCMeta):
                 return w2v_model.get_word_vector(x)
             except MissingWordError:
                 # 'google' is not in the database.
-                return np.zeros((embedding_size,))
+                return np.zeros((embedding_size, ))
         else:
             if x in w2v_model.wv.vocab.keys():
                 return w2v_model.wv.get_vector(x)
             else:
-                return np.zeros((embedding_size,))
+                return np.zeros((embedding_size, ))
 
     @staticmethod
-    def wam(sentences, w2v_model, USE_LMDB=True, agg='mean', embedding_size=300):
+    def wam(sentences,
+            w2v_model,
+            USE_LMDB=True,
+            agg='mean',
+            embedding_size=300):
         '''
         @description: 通过word average model 生成句向量
         @param {type}
@@ -40,7 +48,8 @@ class Embedding(metaclass=ABCMeta):
             func([
                 Embedding.get_embedding(w2v_model, s, USE_LMDB, embedding_size)
                 for s in sentence
-            ], axis=0) for sentence in sentences
+            ],
+                 axis=0) for sentence in sentences
         ])
         return arr
 

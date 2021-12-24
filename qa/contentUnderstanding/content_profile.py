@@ -1,20 +1,24 @@
 import pandas as pd
-from qa.tools.mongo import Mongo
+import toml
+from config import get_cfg
+from qa.knowledge.entity_link import EntityLink
 from qa.queryUnderstanding.preprocess import clean
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
-from config import get_cfg
-from functools import reduce
+from qa.tools.mongo import Mongo
 from tqdm.notebook import tqdm
-import toml
-from qa.knowledge.entity_link import EntityLink
 
 tqdm.pandas(desc="Data Process")
+__all__ = ['ContentUnderstanding']
 
 
 class ContentUnderstanding:
+    __slot__ = [
+        'cfg', 'mongo', 'seg', 'stopwords', 'specialize', 'keyword', 'el'
+    ]
+
     def __init__(self, cfg) -> None:
         self.cfg = cfg
-        self.mongo = Mongo(self.cfg, self.cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(self.cfg, self.cfg.BASE.QA_COLLECTION)
         self.seg = Segmentation(self.cfg)
         self.stopwords = Words(self.cfg).get_stopwords
         self.specialize = Words(self.cfg).get_specializewords
@@ -38,17 +42,12 @@ class ContentUnderstanding:
         return {k: v for k, v in res.items() if v}
 
     def understanding(self, string):
-        if not isinstance(string, list):
-            rough_cut = self.seg.cut(clean(string), is_rough=True)
-        else:
-            string = ''.join(string)
-            rough_cut = string
         entity = self.el.get_mentions(string)
         breed_name = list(set([y[0] for y in entity
                                if y[1] in ['DOG', 'CAT']]))
         disease_name = list(set([y[0] for y in entity if y[1] in ['DISEASE']]))
         symptom_name = list(set([y[0] for y in entity if y[1] in ['SYMPTOM']]))
-        content_tag = self.content_tag(rough_cut)
+        content_tag = self.content_tag(string)
         for key in self.keyword.keys():
             if isinstance(self.keyword[key], list):
                 cols = [
@@ -69,7 +68,8 @@ class ContentUnderstanding:
         return content_tag
 
     def save_to_mongo(self):
-        qa = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
+        qa = pd.DataFrame(
+            list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
         qa['content_tag'] = qa.apply(
             lambda row: self.understanding(row['question_rough_cut']), axis=1)
         qa = pd.concat([
@@ -107,4 +107,14 @@ class ContentUnderstanding:
 if __name__ == '__main__':
     cfg = get_cfg()
     cs = ContentUnderstanding(cfg)
-    cs.save_to_mongo()
+    # cs.save_to_mongo()
+
+    test = [
+        '狗狗容易感染什么疾病', '哈士奇老拆家怎么办', '犬瘟热', '狗发烧', '金毛', '拉布拉多不吃东西怎么办',
+        '犬细小病毒的症状', '犬细小', '我和的', '阿提桑诺曼底短腿犬', '我想养个哈士奇，应该注意什么？',
+        '我家猫拉稀了， 怎么办', '我家猫半夜瞎叫唤，咋办？', '猫骨折了', '狗狗装义肢', '大型犬常见病',
+        '我想养个狗，应该注意什么？', '我想养个猫，应该注意什么？'
+    ]
+
+    for i in test:
+        print(i, cs.understanding(i))

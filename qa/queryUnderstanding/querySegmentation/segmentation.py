@@ -1,47 +1,39 @@
-from LAC import LAC
+import jieba_fast as fjieba
+import jieba_fast.posseg as pseg
 from qa.tools import Singleton, setup_logger
+
 logger = setup_logger()
+__all__ = ['Segmentation']
+
 
 @Singleton
 class Segmentation():
+    __slot__ = ['cfg', 'rough_seg', 'fine_seg']
+
     def __init__(self, cfg):
         self.cfg = cfg
-        self.rough_lac_rank = LAC(mode='rank')
-        self.rough_lac_rank.load_customization(self.cfg.DICTIONARY.CUSTOM_WORDS,
-                                               sep=None)
+        self.rough_seg = fjieba.Tokenizer()
+        self.rough_seg.initialize()
+        self.rough_seg.load_userdict(self.cfg.DICTIONARY.CUSTOM_WORDS)
 
-        self.rough_lac_seg = LAC(mode='seg')
-        self.rough_lac_seg.load_customization(self.cfg.DICTIONARY.CUSTOM_WORDS,
-                                              sep=None)
+        self.fine_seg = fjieba.Tokenizer()
+        self.fine_seg.initialize()
 
-        self.fine_lac_seg = LAC(mode='seg')
-        self.fine_lac_rank = LAC(mode='rank')
+        self.rough_pseg = pseg.POSTokenizer(tokenizer=self.rough_seg)
+        self.fine_pseg = pseg.POSTokenizer(tokenizer=self.fine_seg)
 
     def cut(self, x, mode='seg', is_rough=False):
         if is_rough:
-            if mode == 'seg':
-                return self.rough_lac_seg.run(x)
-            elif mode == 'rank':
-                return self.rough_lac_rank.run(x)
+            if mode == 'pos':
+                return zip(*self.rough_pseg.cut(x))
             else:
-                raise NotImplementedError
+                return self.rough_seg.cut(x)
         else:
-            if mode == 'seg':
-                return self.fine_lac_seg.run(x)
-            elif mode == 'rank':
-                return self.fine_lac_rank.run(x)
+            if mode == 'pos':
+                return zip(*self.fine_pseg.cut(x))
             else:
-                raise NotImplementedError
+                return self.fine_seg.cut(x)
 
     def get_important_words(self, text, is_rough=False):
-        if text.isdecimal():
-            return []
-        if is_rough:
-            s = self.fine_lac_rank.cut(text)
-        else:
-            s = self.rough_lac_rank.cut(text)
-        ret = [x[0] for x in zip(*s) if any([y in x[1] for y in "n"])]
-        # n:名词 v:动词 r:代词(你我他啥) p:介词 e:叹词
-        logger.debug([x for x in zip(*s)])
-        logger.debug("分词分析重要词:{}".format(ret))
-        return ret
+        # TODO ADD word rank function
+        pass

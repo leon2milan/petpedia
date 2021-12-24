@@ -1,7 +1,10 @@
 from qa.matching import Matching
 
+__all__ = ['LexicalSimilarity']
+
 
 class LexicalSimilarity(Matching):
+    __slot__ = []
 
     @staticmethod
     def levenshteinDistance(s1, s2):
@@ -45,7 +48,7 @@ class LexicalSimilarity(Matching):
                         p = i + 1
                 else:
                     dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
-        return max_len, text1[p - max_len: p]
+        return max_len, text1[p - max_len:p]
 
     @staticmethod
     def jaccard(s1, s2):

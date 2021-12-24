@@ -2,7 +2,6 @@ import time
 
 from config import get_cfg
 from qa.matching import Similarity
-from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.retrieval.semantic.hnsw import HNSW
 from qa.retrieval.term import TermRetrieval
 from qa.tools import setup_logger
@@ -10,14 +9,18 @@ from qa.tools.utils import flatten
 from qa.retrieval.manual.manual import Manual
 
 logger = setup_logger()
+__all__ = ['BasicSearch']
 
 
 class BasicSearch():
+    __slot__ = [
+        'cfg', 'seg', 'stopwords', 'sim', 'tr', 'rough_hnsw', 'fine_hnsw',
+        'rule'
+    ]
+
     def __init__(self, cfg):
         logger.debug('Initializing Basic Search Object ....')
         self.cfg = cfg
-        self.seg = Segmentation(cfg)
-        self.stopwords = Words(cfg).get_stopwords
 
         self.sim = Similarity(cfg)
 
@@ -93,19 +96,6 @@ class BasicSearch():
                     res.append(i)
                     exist[i["docid"]] = 1
         return res
-
-    def __preprocess(self, query, is_rough=False):
-        query = query.strip()
-        if query == "":
-            return ""
-        query = [
-            (x[0], x[-1])
-            for x in zip(*self.seg.cut(query, mode='rank', is_rough=is_rough))
-            if x[-1] >= self.cfg.RETRIEVAL.WELL_ROUTE.WORD_RANK_THRESHOLD
-            and x[0] not in self.stopwords
-            # if x[0] not in self.stopwords
-        ]
-        return query
 
     def __keywords_filter(self, result, _filter):
         for name, item in self.rules.items():
@@ -305,40 +295,15 @@ class BasicSearch():
         notresult = []
         donequery = {}
         for query in seek_query_list:
-            s = time.time()
-            if self.cfg.RETRIEVAL.WELL_ROUTE.SEG_GRAINED == 'fine':
-                fine_query = [
-                    x[0]
-                    for x in self.__preprocess(query["query"], is_rough=False)
-                ]
-                rough_query = None
-            elif self.cfg.RETRIEVAL.WELL_ROUTE.SEG_GRAINED == 'rough':
-                rough_query = [
-                    x[0]
-                    for x in self.__preprocess(query["query"], is_rough=True)
-                ]
-                fine_query = None
-            elif self.cfg.RETRIEVAL.WELL_ROUTE.SEG_GRAINED == 'both':
-                rough_query = [
-                    x[0]
-                    for x in self.__preprocess(query["query"], is_rough=True)
-                ]
-                fine_query = [
-                    x[0]
-                    for x in self.__preprocess(query["query"], is_rough=False)
-                ]
-
             querysign = "%s%s" % (query["query"], query["type"])
-            if querysign in donequery:
+            if querysign in donequery or (not query.get('rough_query')
+                                          and not query.get('fine_query')):
                 continue
             donequery[querysign] = 1
             logger.debug(
                 "query 检索原语: {}, rough cut 后 {}, fine cut 后 {}".format(
-                    query, rough_query if rough_query is not None else '',
-                    fine_query if fine_query is not None else ''))
-            
-            if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
-                logger.info('preprocess takes: {}'.format(time.time() - s))
+                    query['query'], query.get('rough_query'),
+                    query.get('fine_query')))
 
             s = time.time()
             if query["type"] == "BEST_MATCH":
@@ -346,62 +311,52 @@ class BasicSearch():
                 if self.cfg.RETRIEVAL.BEST_ROUTE.DO_KBQA:
                     pass
 
-                if self.cfg.RETRIEVAL.BEST_ROUTE.USE_ES:
-                    tmp += self.tr.search(query["query"],
-                                          query['type'],
-                                          is_rough=True)
+                if self.cfg.RETRIEVAL.WELL_ROUTE.USE_ES:
+                    tmp += self.tr.search(query['query'], query['rough_query'],
+                                          query['fine_query'], query['type'])
 
                 result["BEST_MATCH"] += self.__post_best_match(
-                    query["query"], tmp, limit=self.cfg.RETRIEVAL.TOPK)
-            
+                    query["query"], tmp, limit=self.cfg.RETRIEVAL.LIMIT)
+
             if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
                 logger.info('BEST_MATCH takes: {}'.format(time.time() - s))
 
             s = time.time()
             if query["type"] == "WELL_MATCH":
-                if rough_query is not None and rough_query:
-                    tmp = []
-                    tmp += flatten(self.rough_hnsw.search(rough_query))
+                term_weight = self.sim.ss.delete_diff(query['rough_query'],
+                                                      is_rough=False)
+                if query['rough_query'] is not None and query['rough_query']:
 
-                    if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
-                        logger.info('rough hnsw WELL_MATCH takes: {}'.format(time.time() - s))
-
-                    if self.cfg.RETRIEVAL.WELL_ROUTE.USE_ES:
-                        tmp += self.tr.search(rough_query,
-                                              query['type'],
-                                              is_rough=True)
-                    
-                    if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
-                        logger.info('rough es WELL_MATCH takes: {}'.format(time.time() - s))
-
+                    tmp = flatten(self.rough_hnsw.search(query['rough_query']))
                     result["WELL_MATCH"] += self.__post_well_match(
-                        list(
-                            zip(rough_query,
-                                self.sim.ss.delete_diff(rough_query))),
+                        list(zip(query['rough_query'], term_weight)),
                         tmp,
                         limit=self.cfg.RETRIEVAL.LIMIT)
-
-                if fine_query is not None and fine_query:
-                    tmp = []
-                    tmp += flatten(self.fine_hnsw.search(fine_query))
-                    logger.debug('fine hnsw WELL_MATCH takes: {}'.format(time.time() - s))
-
-                    tmp += self.tr.search(fine_query,
-                                          query['type'],
-                                          is_rough=False)
-                            
                     if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
-                        logger.info('fine es takes: {}'.format(time.time() - s))
+                        logger.info('rough hnsw WELL_MATCH takes: {}'.format(
+                            time.time() - s))
+
+                if query['fine_query'] is not None and query['fine_query']:
+                    tmp = flatten(self.fine_hnsw.search(query['fine_query']))
 
                     result["WELL_MATCH"] += self.__post_well_match(
-                        list(
-                            zip(
-                                fine_query,
-                                self.sim.ss.delete_diff(fine_query,
-                                                        is_rough=False))),
+                        list(zip(query['rough_query'], term_weight)),
                         tmp,
                         limit=self.cfg.RETRIEVAL.LIMIT)
-                
+                    if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+                        logger.info('fine hnsw WELL_MATCH takes: {}'.format(
+                            time.time() - s))
+
+                if self.cfg.RETRIEVAL.WELL_ROUTE.USE_ES:
+                    tmp = self.tr.search(query['query'], query['rough_query'],
+                                         query['fine_query'], query['type'])
+                    result["WELL_MATCH"] += self.__post_well_match(
+                        list(zip(query['rough_query'], term_weight)),
+                        tmp,
+                        limit=self.cfg.RETRIEVAL.LIMIT)
+                    if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+                        logger.info('es takes: {}'.format(time.time() - s))
+
             if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
                 logger.info('WELL_MATCH takes: {}'.format(time.time() - s))
 
@@ -409,7 +364,7 @@ class BasicSearch():
             if query["type"] == "PART_MATCH":
                 if self.cfg.RETRIEVAL.PART_ROUTE.USE_CONTENT_PROFILE:
                     pass
-            
+
             if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
                 logger.info('PART_MATCH takes: {}'.format(time.time() - s))
             logger.debug('retrieval result befort filter: {}'.format(result))
@@ -418,33 +373,18 @@ class BasicSearch():
             s = time.time()
             result[query["type"]] = self.__keywords_filter(
                 result[query["type"]], query["filter"])
-            logger.debug('retrieval result after filter: {}'.format(result))
+            logger.debug('retrieval result after filter: {}'.format([result]))
 
             if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
-                logger.info('__keywords_filter takes: {}'.format(time.time() - s))
+                logger.info('__keywords_filter takes: {}'.format(time.time() -
+                                                                 s))
+
+            logger.debug('{}, takes: {}'.format(
+                query['type'], [x['docid'] for x in result[query['type']]]))
 
             # 减法
             if "mustnot" in query:
-                notresult += self.tr.search(self.__preprocess(query["mustnot"],
-                                                              is_rough=True),
-                                            mode='well',
-                                            is_rough=True,
-                                            limit=self.cfg.RETRIEVAL.LIMIT)
-                notresult += self.tr.search(self.__preprocess(query["mustnot"],
-                                                              is_rough=False),
-                                            mode='well',
-                                            is_rough=False,
-                                            limit=self.cfg.RETRIEVAL.LIMIT)
-                notresult += self.tr.search(self.__preprocess(query["mustnot"],
-                                                              is_rough=True),
-                                            mode='part',
-                                            is_rough=True,
-                                            limit=self.cfg.RETRIEVAL.LIMIT)
-                notresult += self.tr.search(self.__preprocess(query["mustnot"],
-                                                              is_rough=False),
-                                            mode='part',
-                                            is_rough=False,
-                                            limit=self.cfg.RETRIEVAL.LIMIT)
+                pass
 
         s = time.time()
         # l0 截断
@@ -466,9 +406,10 @@ class BasicSearch():
 
         # l1 相关性排序 粗排
         s = time.time()
-        result = self.__cal_similarity(
-            [x['query'] for x in seek_query_list if x['type'] == 'BEST_MATCH'][0],
-            result)
+        result = self.__cal_similarity([
+            x['rough_query'] for x in seek_query_list
+            if x['type'] == 'BEST_MATCH'
+        ][0], result)
 
         if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
             logger.info('Cal simlarity takes: {}'.format(time.time() - s))
@@ -486,13 +427,20 @@ class BasicSearch():
     def __cal_similarity(self, query, result):
         s = time.time()
         scores = self.sim.get_score_many(
-            query, [x['docid'].split(':')[0] for x in result])
+            query, [x['doc']['question'] for x in result], [
+                x.split() for x in
+                [" ".join(x['doc']['question_rough_cut']) for x in result]
+            ])
+        logger.debug('query: {}, befor rank result is : {}'.format(
+            query, [" ".join(x['doc']['question_rough_cut']) for x in result]))
+        assert len(result) == len(
+            scores
+        ), f"result length: {len(result)} doesn't match scores length {len(scores)}"
         logger.debug('Get score takes: {}'.format(time.time() - s))
         for i in range(len(result)):
             score = scores[i]
-            if score == 1.0 and query != result[i]['docid']:
-                result[i]['score'] = score - 0.05
-            result[i]['score'] = scores[i]
+
+            result[i]['score'] = score
         return result
 
 
@@ -526,4 +474,6 @@ if __name__ == "__main__":
     }]
     import time
     s = time.time()
-    print('res: ', [(x['score'], x['docid']) for x in bs.search(query)], 'time: ', time.time() - s)
+    print('res: ', [(x['score'], x['docid']) for x in bs.search(query)],
+          'time: ',
+          time.time() - s)

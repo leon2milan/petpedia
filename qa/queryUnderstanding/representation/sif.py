@@ -10,11 +10,17 @@ from qa.tools.logger import setup_logger
 from qa.tools.utils import Singleton
 
 logging = setup_logger()
+__all__ = ['SIF']
 
 
 @REPRESENTATION_REGISTRY.register()
 @Singleton
 class SIF(Embedding):
+    __slot__ = [
+        'cfg', 'a', 'rmpc', 'is_rough', 'model_path', 'data_path',
+        'weightfile', 'w2v', 'idx2weight', 'vocab_size', 'embedding_size', 'U'
+    ]
+
     def __init__(self, cfg, is_rough=False):
         Embedding.__init__(self, cfg)
         self.a = self.cfg.REPRESENTATION.SIF.A

@@ -2,9 +2,9 @@
 本模块实现AC自动机封装为Ahocorasick类，用于进行词典的多模匹配。
 """
 
-import logging
-
 from config.config import get_cfg
+
+__all__ = ['Ahocorasick']
 
 
 class Node(object):
@@ -28,6 +28,8 @@ class Ahocorasick(object):
     Attributes:
         __root: Node类型，AC自动机根节点
     """
+    __slot__ = ['__root']
+
     def __init__(self):
         """初始化Ahocorasick的根节点__root"""
         self.__root = Node()

@@ -12,8 +12,16 @@ from pypinyin import lazy_pinyin, Style
 from config import get_cfg
 from qa.queryUnderstanding.querySegmentation import Segmentation
 
+__all__ = ['KenLM']
+
 
 class KenLM():
+    __slot__ = [
+        'cfg', 'seg', 'memory', 'min_count', 'order', 'kenlm_model_path',
+        'corpus_file', 'vocab_file', 'ngram_file', 'output_file', 'arpa_file',
+        'klm_file', 'skip_symbols', 'trans', 'model'
+    ]
+
     def __init__(self, cfg):
         self.cfg = cfg
 
@@ -230,7 +238,7 @@ class KenLM():
         f.close()
         chars = chars.split('\x00')
         chars = [i for i in chars]  # .decode('utf-8')
-        
+
         ngrams = [Counter({}) for _ in range(self.order)]
         total = 0
         size_per_item = self.order * 4 + 8
@@ -371,7 +379,7 @@ class KenLM():
         '''
         new_words_2 = {}
         for nw, freq in tqdm(ngrams_dict.items()):
-            lac_result = self.seg.cut(nw, mode='rank')
+            lac_result = self.seg.cut(nw, mode='pos')
             if len(lac_result) != 3:
                 continue
             words = lac_result[0]
@@ -389,9 +397,8 @@ if __name__ == '__main__':
     cfg = get_cfg()
     km = KenLM(cfg)
 
-    km.write_corpus(
-        km.text_generator(cfg.BASE.CHAR_FILE, cut=False),
-        km.corpus_file)  # 将语料转存为文本
+    km.write_corpus(km.text_generator(cfg.BASE.CHAR_FILE, cut=False),
+                    km.corpus_file)  # 将语料转存为文本
 
     # NLM模型训练
     status = km.lm_train()

@@ -7,10 +7,13 @@ from transformers import BertConfig, BertModel, BertTokenizer
 from qa.matching.semantic.simCSE.unsup import SimcseModel
 
 logger = setup_logger(name='simCSE')
+__all__ = ['SIMCSE']
 
 
 @Singleton
 class SIMCSE:
+    __slot__ = ['cfg', 'model_path', 'device', 'tokenizer', 'model']
+
     def __init__(self, cfg) -> None:
         self.cfg = cfg
         self.model_path = self.cfg.REPRESENTATION.SIMCSE.PRETRAINED_MODEL
@@ -85,9 +88,9 @@ if __name__ == '__main__':
             ['我家猫半夜瞎叫唤，咋办？', '猫咪发情咋办'], ['我家猫拉稀了， 怎么办', '猫尿道炎拉稀吗'],
             ['我家猫拉稀了， 怎么办', '猫为什么拉稀'], ['我想养个狗，应该注意什么？', '养狗狗应该注意什么'],
             ['我想养个狗，应该注意什么？', '养杜宾要注意什么'], ['我想养个哈士奇，应该注意什么？', '养狗狗应该注意什么'],
-            ['我想养个哈士奇，应该注意什么？', '养哈士奇有什么必须留意的吗？你知道吗'], ['我想养个哈士奇，应该注意什么？', '夏天养藏獒注意什么'],
-            ['我想养个猫，应该注意什么？', '猫怀孕应该注意什么'], ['我想养个猫，应该注意什么？', '新手应该养什么猫'],
-            ['我想养个猫，应该注意什么？', '猫怀孕应该注意什么']]
+            ['我想养个哈士奇，应该注意什么？', '养哈士奇有什么必须留意的吗？你知道吗'],
+            ['我想养个哈士奇，应该注意什么？', '夏天养藏獒注意什么'], ['我想养个猫，应该注意什么？', '猫怀孕应该注意什么'],
+            ['我想养个猫，应该注意什么？', '新手应该养什么猫'], ['我想养个猫，应该注意什么？', '猫怀孕应该注意什么']]
 
     for i in test:
         s = time.time()

@@ -4,9 +4,13 @@ from qa.tools import Singleton, setup_logger
 from config import get_cfg
 
 logger = setup_logger(name='mongo')
+__all__ = ['Mongo']
+
 
 @Singleton
 class Mongo():
+    __slot__ = ['cfg', 'conn', 'db']
+
     def __init__(self, cfg, db=None) -> None:
         self.cfg = cfg
         logger.info(f"connect to {self.cfg.BASE.ENVIRONMENT}")

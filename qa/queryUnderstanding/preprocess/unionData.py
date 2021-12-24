@@ -1,3 +1,4 @@
+from numpy.lib.function_base import quantile
 import pandas as pd
 from qa.tools.mongo import Mongo
 from qa.queryUnderstanding.preprocess import clean, normal_cut_sentence
@@ -10,7 +11,7 @@ from tqdm import tqdm
 tqdm.pandas(desc="Data Process")
 
 cfg = get_cfg()
-mongo = Mongo(cfg, cfg.INVERTEDINDEX.DB_NAME)
+mongo = Mongo(cfg, cfg.BASE.QA_COLLECTION)
 es = ES(cfg)
 seg = Segmentation(cfg)
 stopwords = Words(cfg).get_stopwords
@@ -46,19 +47,22 @@ else:
 
     db = conn['qa']
     qa = pd.DataFrame(list(db['qa'].find({})))
-mongo.clean(cfg.self.cfg.BASE.QA_COLLECTION)
-mongo.insert_many(cfg.self.cfg.BASE.QA_COLLECTION,
-                  qa.fillna('').to_dict('record'))
+mongo.clean(cfg.BASE.QA_COLLECTION)
+mongo.insert_many(cfg.BASE.QA_COLLECTION, qa.fillna('').to_dict('record'))
 
-es.insert_mongo('qa_v1')
+es.insert_mongo(
+    'qa_v1', qa[[
+        '_id', 'index', 'question', 'answer', 'question_fine_cut',
+        'question_rough_cut'
+    ]])
 
 # if cfg.BASE.FROM_FILE:
 #     qa['answer_fine_cut'] = qa['answer'].progress_apply(
-#         lambda x: [[x for x in line if x not in stopwords] for line in seg.cut(
-#             [clean(y) for y in normal_cut_sentence(x)], is_rough=False)])
+#         lambda x: [[x for x in line if x not in stopwords] for line in
+#             [seg.cut(clean(y), is_rough=False) for y in normal_cut_sentence(x)]])
 #     qa['answer_rough_cut'] = qa['answer'].progress_apply(
-#         lambda x: [[x for x in line if x not in stopwords] for line in seg.cut(
-#             [clean(y) for y in normal_cut_sentence(x)], is_rough=True)])
+#         lambda x: [[x for x in line if x not in stopwords] for line in
+#             [seg.cut(clean(y), is_rough=True) for y in normal_cut_sentence(x)]])
 
 #     data =  qa['answer'].dropna().drop_duplicates().progress_apply(lambda x: normal_cut_sentence(x)).tolist() + \
 #             qa['question'].unique().tolist()

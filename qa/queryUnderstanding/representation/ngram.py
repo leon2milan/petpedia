@@ -10,20 +10,28 @@ import numpy as np
 from qa.queryUnderstanding.querySegmentation import Segmentation
 from config import get_cfg
 
+__all__ = ['BiGram']
+
 
 class BiGram:
+    __slot__ = [
+        'cfg', 'seg', 'wfreq', 'wwfreq', 'rewwfreq', 'token_size',
+        'token2_size'
+    ]
+
     def __init__(self, cfg):
         self.cfg = cfg
         self.seg = Segmentation(cfg)
-        self.wfreq = defaultdict(int)   # 单词词频
+        self.wfreq = defaultdict(int)  # 单词词频
         self.wwfreq = defaultdict(int)  # 两个单词组合词频
         self.rewwfreq = defaultdict(int)  # 两个单词组合词频
-        self.token_size = 0     # 单词总数
-        self.token2_size = 0    # 二元组合个数
+        self.token_size = 0  # 单词总数
+        self.token2_size = 0  # 二元组合个数
 
     def _add_eosbos(self, text):
         text = " ".join(text) if isinstance(text, list) else text
-        text = [self.cfg.BASE.START_TOKEN] + text.split() + [self.cfg.BASE.END_TOKEN]
+        text = [self.cfg.BASE.START_TOKEN
+                ] + text.split() + [self.cfg.BASE.END_TOKEN]
         return " ".join(text)
 
     def build(self, data):
@@ -32,10 +40,10 @@ class BiGram:
             word_list = list(text.split())
             size = len(word_list)
             for i in range(size - 1):
-                ww = "".join(word_list[i: i + 2])
+                ww = "".join(word_list[i:i + 2])
                 self.wwfreq[ww] += 1
             for i in range(1, size):
-                reww = "".join(word_list[i - 1: i + 1])
+                reww = "".join(word_list[i - 1:i + 1])
                 self.rewwfreq[reww] += 1
             for word in word_list:
                 self.wfreq[word] += 1
@@ -61,7 +69,7 @@ class BiGram:
 
     def uni_tf(self, w):
         return self.wfreq.get(w, 0)
-    
+
     def gaussian_score(self, w):
         return norm.cdf(x=self.wwfreq[w], loc=self.mean, scale=self.var)
 
@@ -78,7 +86,8 @@ class BiGram:
         :param sentence: 未分词的整句
         :return: 概率，困惑度。dtype=float,float
         """
-        word_list = [self.cfg.BASE.START_TOKEN] + self.seg.cut(sentence) + [self.cfg.BASE.END_TOKEN]
+        word_list = [self.cfg.BASE.START_TOKEN
+                     ] + self.seg.cut(sentence) + [self.cfg.BASE.END_TOKEN]
         size = len(word_list)
         prob = 1
         for i in range(size - 1):
@@ -87,15 +96,36 @@ class BiGram:
         return prob, perplexity
 
     def save(self):
-        pickle.dump(self.wfreq, open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'unigram.pkl'), 'wb'))
-        pickle.dump(self.wwfreq, open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'bigram.pkl'), 'wb'))
-        pickle.dump(self.rewwfreq, open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'rebigram.pkl'), 'wb'))
+        pickle.dump(
+            self.wfreq,
+            open(
+                os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH,
+                             'unigram.pkl'), 'wb'))
+        pickle.dump(
+            self.wwfreq,
+            open(
+                os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH,
+                             'bigram.pkl'), 'wb'))
+        pickle.dump(
+            self.rewwfreq,
+            open(
+                os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH,
+                             'rebigram.pkl'), 'wb'))
 
     def load(self):
-        self.wfreq = pickle.load(open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'unigram.pkl'), 'rb'))
-        self.wwfreq = pickle.load(open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'bigram.pkl'), 'rb'))
-        self.rewwfreq = pickle.load(open(os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH, 'rebigram.pkl'), 'rb'))
-        
+        self.wfreq = pickle.load(
+            open(
+                os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH,
+                             'unigram.pkl'), 'rb'))
+        self.wwfreq = pickle.load(
+            open(
+                os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH,
+                             'bigram.pkl'), 'rb'))
+        self.rewwfreq = pickle.load(
+            open(
+                os.path.join(self.cfg.REPRESENTATION.NGRAM.SAVE_PATH,
+                             'rebigram.pkl'), 'rb'))
+
         self.token_size = reduce(add, self.wfreq.values())
         self.token2_size = reduce(add, self.wwfreq.values())
         self.mean = self.token2_size / len(self.wwfreq)

@@ -6,7 +6,9 @@ import inspect
 import logging
 from fvcore.common.config import CfgNode as _CfgNode
 
-from qa.tools.fileUtils import PathManager
+from iopath.common.file_io import PathManager as PathManagerBase
+
+PathManager = PathManagerBase()
 
 
 class CfgNode(_CfgNode):
@@ -26,21 +28,24 @@ class CfgNode(_CfgNode):
     .. automethod:: merge_from_list
     .. automethod:: merge_from_other_cfg
     """
-
     @classmethod
     def _open_cfg(cls, filename):
         return PathManager.open(filename, "r")
 
     # Note that the default value of allow_unsafe is changed to True
-    def merge_from_file(self, cfg_filename: str, allow_unsafe: bool = True) -> None:
+    def merge_from_file(self,
+                        cfg_filename: str,
+                        allow_unsafe: bool = True) -> None:
         """
         Load content from the given config file and merge it into self.
         Args:
             cfg_filename: config filename
             allow_unsafe: allow unsafe yaml syntax
         """
-        assert PathManager.isfile(cfg_filename), f"Config file '{cfg_filename}' does not exist!"
-        loaded_cfg = self.load_yaml_with_base(cfg_filename, allow_unsafe=allow_unsafe)
+        assert PathManager.isfile(
+            cfg_filename), f"Config file '{cfg_filename}' does not exist!"
+        loaded_cfg = self.load_yaml_with_base(cfg_filename,
+                                              allow_unsafe=allow_unsafe)
         loaded_cfg = type(self)(loaded_cfg)
 
         # defaults.py needs to import CfgNode
@@ -59,8 +64,7 @@ class CfgNode(_CfgNode):
 
             loaded_ver = guess_version(loaded_cfg, cfg_filename)
         assert loaded_ver <= self.VERSION, "Cannot merge a v{} config into a v{} config.".format(
-            loaded_ver, self.VERSION
-        )
+            loaded_ver, self.VERSION)
 
         if loaded_ver == self.VERSION:
             self.merge_from_other_cfg(loaded_cfg)
@@ -70,10 +74,8 @@ class CfgNode(_CfgNode):
 
             logger.warning(
                 "Loading an old v{} config file '{}' by automatically upgrading to v{}. "
-                "See docs/CHANGELOG.md for instructions to update your files.".format(
-                    loaded_ver, cfg_filename, self.VERSION
-                )
-            )
+                "See docs/CHANGELOG.md for instructions to update your files.".
+                format(loaded_ver, cfg_filename, self.VERSION))
             # To convert, first obtain a full config at an old version
             old_self = downgrade_config(self, to_version=loaded_ver)
             old_self.merge_from_other_cfg(loaded_cfg)
@@ -157,8 +159,7 @@ def configurable(init_func=None, *, from_config=None):
 
     if init_func is not None:
         assert (
-            inspect.isfunction(init_func)
-            and from_config is None
+            inspect.isfunction(init_func) and from_config is None
             and init_func.__name__ == "__init__"
         ), "Incorrect use of @configurable. Check API documentation for examples."
 
@@ -171,10 +172,13 @@ def configurable(init_func=None, *, from_config=None):
                     "Class with @configurable must have a 'from_config' classmethod."
                 ) from e
             if not inspect.ismethod(from_config_func):
-                raise TypeError("Class with @configurable must have a 'from_config' classmethod.")
+                raise TypeError(
+                    "Class with @configurable must have a 'from_config' classmethod."
+                )
 
             if _called_with_cfg(*args, **kwargs):
-                explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
+                explicit_args = _get_args_from_config(from_config_func, *args,
+                                                      **kwargs)
                 init_func(self, **explicit_args)
             else:
                 init_func(self, *args, **kwargs)
@@ -192,7 +196,8 @@ def configurable(init_func=None, *, from_config=None):
             @functools.wraps(orig_func)
             def wrapped(*args, **kwargs):
                 if _called_with_cfg(*args, **kwargs):
-                    explicit_args = _get_args_from_config(from_config, *args, **kwargs)
+                    explicit_args = _get_args_from_config(
+                        from_config, *args, **kwargs)
                     return orig_func(**explicit_args)
                 else:
                     return orig_func(*args, **kwargs)
@@ -218,8 +223,7 @@ def _get_args_from_config(from_config_func, *args, **kwargs):
         raise TypeError(f"{name} must take 'cfg' as the first argument!")
     support_var_arg = any(
         param.kind in [param.VAR_POSITIONAL, param.VAR_KEYWORD]
-        for param in signature.parameters.values()
-    )
+        for param in signature.parameters.values())
     if support_var_arg:  # forward all arguments to from_config, if from_config accepts them
         ret = from_config_func(*args, **kwargs)
     else:

@@ -16,11 +16,16 @@ from tqdm import tqdm
 
 tqdm.pandas(desc="word2vec")
 logger = setup_logger()
+__all__ = ['W2V']
 
 
 @REPRESENTATION_REGISTRY.register()
 @Singleton
 class W2V(Embedding):
+    __slot__ = [
+        'cfg', 'stopwords', 'pretrained', 'model', 'word2idx', 'idx2embedding'
+    ]
+
     def __init__(self, cfg, is_rough=False, finetune=False, gensim_way=True):
         Embedding.__init__(self, cfg)
 

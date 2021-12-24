@@ -366,11 +366,11 @@ if __name__ == '__main__':
     word = copy.deepcopy(new)
     # print(len(set(word['word'].drop_duplicates().values.tolist()) - set(cuts)))
     word['word'] = word['word'].apply(lambda x: trans2simple(x))
-    word['cut'] = word['word'].apply(lambda x: seg.cut(x, mode='rank'))
+    word['cut'] = word['word'].apply(lambda x: seg.cut(x, mode='pos'))
     word['len'] = word['cut'].apply(lambda x: len(x[0]))
     word['filter'] = word['cut'].apply(
         lambda x: False if 'c' in x[1] or 'd' in x[1] or 'm' in x[1] or 'r' in
-        x[1] or 'f' in x[1] or 0 in x[2] or '不要吃' in x[0] or '有助于' in x[0] or
+        x[1] or 'f' in x[1] or '不要吃' in x[0] or '有助于' in x[0] or
         '可能会' in x[0] or '可以' in x[0] or '能够' in x[0] or '希望' in x[0] or '地' in
         x[0] or '有利于' in x[0] or '有没有' in x[0] or '会' in x[0] or '能' in x[
             0] or '给' in x[0] or '不要' in x[0] or '现在' in x[0] or '不能' in x[
@@ -383,8 +383,6 @@ if __name__ == '__main__':
     ]].apply(lambda row: get_score(row), axis=1)
     word = word[(word['len'] > 1) & (word['filter'])]
     word['type'] = word['cut'].apply(lambda x: ' '.join(x[1]))
-    word['important'] = word['cut'].apply(
-        lambda x: ' '.join([str(y) for y in x[2]]))
     word['word_length'] = word['word'].apply(len)
     word = word[~word['word'].str.startswith('月')]
     word = word[~word['word'].str.startswith('不')]

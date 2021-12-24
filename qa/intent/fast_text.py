@@ -1,22 +1,27 @@
-from config import get_cfg
-from qa.tools.mongo import Mongo
-import pandas as pd
-import fasttext
-from functools import reduce
 import os
 import re
+from functools import reduce
+
+import fasttext
+import pandas as pd
+from config import get_cfg
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
-import pickle
-from qa.tools.ahocorasick import Ahocorasick
 from qa.tools import flatten
+from qa.tools.ahocorasick import Ahocorasick
+from qa.tools.mongo import Mongo
 
 INTENT_MAP = {'__lable__1': "pet_qa", "__lable__0": "chitchat"}
+__all__ = ['Fasttext']
 
 
 class Fasttext(object):
+    __slot__ = [
+        'cfg', 'mongo', 'seg', 'stopwords', 'specialize', 'classifier', 'ah'
+    ]
+
     def __init__(self, cfg, model=None):
         self.cfg = cfg
-        self.mongo = Mongo(self.cfg, self.cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(self.cfg, self.cfg.BASE.QA_COLLECTION)
         self.seg = Segmentation(self.cfg)
         self.stopwords = Words(self.cfg).get_stopwords
         self.specialize = Words(cfg).get_specializewords
@@ -47,9 +52,9 @@ class Fasttext(object):
             qa = pd.DataFrame(
                 list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
             qa['question_cut'] = qa['question'].progress_apply(
-                lambda x: self.seg.cut(x, mode='rank', is_rough=True))
+                lambda x: self.seg.cut(x, mode='pos', is_rough=True))
             qa['question_cut'] = qa['question_cut'].apply(
-                lambda x: list(zip(x[0], x[1], x[2])))
+                lambda x: list(zip(x[0], x[1])))
             qa['question_cut'] = qa['question_cut'].apply(
                 lambda x:
                 [i[0] for i in x if i[1] in ['n', 'nz', 'v', 'vn', 'nw']])
@@ -152,7 +157,7 @@ if __name__ == '__main__':
 
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
-        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello'
+        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种'
     ]
 
     for x in text:

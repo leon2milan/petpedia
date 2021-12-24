@@ -7,14 +7,17 @@ import pandas as pd
 from config import get_cfg
 
 logger = setup_logger()
+__all__ = ['SynonymDetection']
 
 
 class SynonymDetection(object):
+    __slot__ = ['cfg', 'seg', 'stopwords', 'mongo']
+
     def __init__(self, cfg) -> None:
         self.cfg = cfg
         self.seg = Segmentation(self.cfg)
         self.stopwords = Words(self.cfg).get_stopwords
-        self.mongo = Mongo(self.cfg, self.cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(self.cfg, self.cfg.BASE.QA_COLLECTION)
 
     def load_input_words(self):
         input_word_code_dict = dict()
@@ -51,7 +54,10 @@ class SynonymDetection(object):
 
     def word_id_file(self):
         entity_set = set()
-        self.data = [x.strip().split() for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()]
+        self.data = [
+            x.strip().split()
+            for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()
+        ]
         for line in self.data:
             for word in line:
                 entity_set.add(word)
@@ -66,14 +72,14 @@ class SynonymDetection(object):
 
     def run(self):
         self.preprocess_file()
-        
+
         if self.cfg.SYNONYM.USE_BAIKE_CRAWLER:
             logger.info("staring baike crawler...")
             word_code_list = []
             for k, v in self.input_word_code_dict.items():
                 word_code_list.append((k, v))
-            baike_crawler.baike_synonym_detect(self.cfg.DICTIONARY.SYNONYM_PATH,
-                                               word_code_list)
+            baike_crawler.baike_synonym_detect(
+                self.cfg.DICTIONARY.SYNONYM_PATH, word_code_list)
 
         if self.cfg.SYNONYM.USE_SN_MODEL:
             semantic_network.synonym_detect(

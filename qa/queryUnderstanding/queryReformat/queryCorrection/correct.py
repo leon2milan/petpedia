@@ -20,6 +20,7 @@ from qa.tools.trie import Trie
 from qa.tools.utils import Singleton
 
 logger = setup_logger(level='info', name='correction')
+__all__ = ['SpellCorrection']
 
 
 def gen_ranges(seg_list):
@@ -30,8 +31,14 @@ def gen_ranges(seg_list):
         st += len(i)
     return res
 
+
 @Singleton
 class SpellCorrection(object):
+    __slot__ = [
+        'cfg', 'py', 'bigram', 'tsc', 'seg', 'same_pinyin', 'same_stroke',
+        'bk', 'specialization', 'language_model'
+    ]
+
     def __init__(self, cfg):
         logger.info('Initializing Correction Module ....')
         self.cfg = cfg
@@ -45,7 +52,10 @@ class SpellCorrection(object):
         try:
             self.bigram.load()
         except:
-            text = [x.strip() for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()]
+            text = [
+                x.strip()
+                for x in open(self.cfg.BASE.ROUGH_WORD_FILE).readlines()
+            ]
             bigram = BiGram(cfg)
             bigram.build(text)
             del text, bigram
@@ -66,7 +76,7 @@ class SpellCorrection(object):
             # NLM模型arpa文件转化
             km.convert_format()
             km.count_ngrams()
-        self.quad_model = kenlm.Model(kenlm_path)
+        self.language_model = kenlm.Model(kenlm_path)
         # self.dats = self.load_dats(
         # )  # TODO:  替代unigram 降低信息冗余, ternary tree/ trie + csr 优化bigram
         self.same_pinyin = Words(self.cfg).get_samepinyin
@@ -336,7 +346,7 @@ class SpellCorrection(object):
         return err
 
     def get_score(self, sentence):
-        return self.quad_model.score(sentence, bos=False, eos=False)
+        return self.language_model.score(sentence, bos=False, eos=False)
 
     def correct(self, text):
         """
@@ -361,12 +371,13 @@ class SpellCorrection(object):
                 if uni_score > max_score:
                     max_score = uni_score
                     can = x
-            return ((0, len(text)), can, 0.0 if math.isinf(max_score) else max_score)
+            return ((0, len(text)), can,
+                    0.0 if math.isinf(max_score) else max_score)
         # entity pinyin匹配
         candidates = self.py.pinyin_candidate(text, 0, method='entity')
         if candidates:
             return ((0, len(text)), "".join(candidates), 1.0)
-        text_list = self.seg.cut(text, is_rough=True)
+        text_list = list(self.seg.cut(text, is_rough=True))
         # text_list = list(text)
         logger.debug('text_list: {}'.format(text_list))
         logger.debug('segmentation takes: {}'.format(time.time() - start))
@@ -376,7 +387,7 @@ class SpellCorrection(object):
         query_ssc = self.tsc.getSSC(text, 'ALL')
         logger.debug('detect takes: {}'.format(time.time() - start))
         logger.debug('err_info: {}'.format([(x['candidate'], x['source'])
-                                           for x in err_info]))
+                                            for x in err_info]))
         for err in err_info:
             sentence = text_list[:err['st_pos']] + [
                 err['candidate']

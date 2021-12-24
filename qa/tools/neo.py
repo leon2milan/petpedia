@@ -4,10 +4,13 @@ from config import get_cfg
 from neo4j import GraphDatabase
 
 logger = setup_logger(name='mongo')
+__all__ = ['NEO4J']
 
 
 @Singleton
 class NEO4J:
+    __slot__ = ['cfg', 'driver', 'db']
+
     def __init__(self, cfg):
         self.cfg = cfg
         self.driver = GraphDatabase.driver(

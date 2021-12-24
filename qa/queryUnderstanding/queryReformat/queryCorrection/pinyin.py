@@ -20,9 +20,15 @@ from qa.tools.trie import Trie
 from config import get_cfg
 
 logger = setup_logger()
+__all__ = ['Pinyin']
 
 
 class Pinyin:
+    __slot__ = [
+        'cfg', 'entity_trie', 'entity2py', 'py2entity', 'all_py_trie',
+        'all_word2py', 'all_py2word'
+    ]
+
     def __init__(self, cfg):
         self.cfg = cfg
         try:
@@ -51,8 +57,9 @@ class Pinyin:
             print(traceback.print_exc())
             self.entity2py, self.py2entity, self.entity_trie = self.build(
                 flatten([
-                    v for k, v in reduce(lambda a, b: dict(a, **b),
-                                         Words(self.cfg).get_specializewords.values()).items()
+                    v for k, v in reduce(
+                        lambda a, b: dict(a, **b),
+                        Words(self.cfg).get_specializewords.values()).items()
                 ]), 'entity_py')
             self.all_word2py, self.all_py2word, self.all_py_trie = self.build([
                 k for k, v in Counter(

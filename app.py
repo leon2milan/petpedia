@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from config import get_cfg
 from flask import Flask, jsonify, request
+from qa.matching.semantic.semantic_similarity import SemanticSimilarity
+from qa.queryUnderstanding.querySegmentation.segmentation import Segmentation
 from qa.tools import setup_logger
 from qa.main import Search
 from qa.intent import Fasttext
@@ -17,7 +19,8 @@ searchObj = Search(cfg)
 el = EntityLink(cfg)
 helper = SearchHelper(cfg)
 sc = SpellCorrection(cfg)
-
+ss = SemanticSimilarity(cfg)
+seg = Segmentation(cfg)
 logger.info("Success load model!!!")
 
 app = Flask(__name__)
@@ -66,7 +69,24 @@ def spell_correct():
     data = request.json
     query = data['query']
     e_pos, can, max_score = sc.correct(query)
-    return jsonify({"error_pos": e_pos, "candidate": can, 'error_score': max_score})
+    return jsonify({
+        "error_pos": e_pos,
+        "candidate": can,
+        'error_score': max_score
+    })
+
+
+@app.route('/term_weight', methods=["POST"])
+def term_weight():
+    data = request.json
+    query = data['query']
+    rough_query = seg.cut(query, is_rough=True)
+    segmentation = rough_query[0]
+    tw = ss.delete_diff(segmentation).tolist()
+    return jsonify({
+        "segmentation": segmentation,
+        'term_weight': tw
+    })
 
 
 if __name__ == '__main__':

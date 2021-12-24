@@ -15,7 +15,7 @@ tqdm.pandas(desc="Data Process")
 class DuringGuide:
     def __init__(self, cfg) -> None:
         self.cfg = cfg
-        self.mongo = Mongo(cfg, cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(cfg, cfg.BASE.QA_COLLECTION)
         self.specialize = Words(cfg).get_specializewords
         self.ah = Ahocorasick()
 

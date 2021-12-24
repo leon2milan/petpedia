@@ -4,10 +4,13 @@ from qa.tools import Singleton, setup_logger
 from qa.contentUnderstanding.content_profile import ContentUnderstanding
 
 logger = setup_logger(name='es')
+__all__ = ['ES']
 
 
 @Singleton
 class ES:
+    __slot__ = ['cfg', 'es', 'cs']
+
     def __init__(self, cfg) -> None:
         self.cfg = cfg
         logger.info(f"connect to {self.cfg.BASE.ENVIRONMENT}")
@@ -52,16 +55,32 @@ class ES:
         } for x in res['hits']['hits']]
         return res
 
-    def exact_search(self, _index, _row, _query):
+    def exact_search(self, _index, _query, _rough_query, _fine_query):
         query = f"""
                 {{
-                "query":{{
-                    "term": {{
-                            "{_row}": "{_query}"
+                    "query":{{
+                        "bool": {{
+                            "should": [
+                                {{
+                                    "term": {{
+                                        "question_rough_cut.raw": "{' '.join(_rough_query)}"
+                                    }}
+                                }},
+                                {{
+                                    "term": {{
+                                        "question_fine_cut.raw": "{' '.join(_fine_query)}"
+                                    }}
+                                }},
+                                    {{
+                                    "term": {{
+                                        "question.keyword": "{_query}"
+                                    }}
+                                }}
+                            ]
                         }}
                     }},
-                "size": {self.cfg.RETRIEVAL.LIMIT},
-                "_source": [ "_idx", "question", "answer", "question_rough_cut", "question_fine_cut"]
+                    "size": {self.cfg.RETRIEVAL.LIMIT},
+                    "_source": [ "_idx", "question", "answer", "question_rough_cut", "question_fine_cut"]
                 }}
                 """
         return self.search(_index, query)
@@ -71,7 +90,22 @@ class ES:
                 {{
                 "query":{{
                     "match": {{
-                            "{_row}.analyzed": "{' OR '.join(_query)}"
+                            "{_row}.analyzed": "{' '.join(_query)}"
+                        }}
+                    }},
+                "size": {self.cfg.RETRIEVAL.LIMIT},
+                "_source": [ "_idx", "question", "answer", "question_rough_cut", "question_fine_cut"]
+                }}
+                """
+        return self.search(_index, query)
+
+    def fuzzy_search_both(self, _index, _rough_query: list, _fine_query: list):
+        query = f"""
+                {{
+                "query":{{
+                    "multi_match": {{
+                            "query": "{' '.join(list(set(_rough_query + _fine_query)))}{' '.join(_fine_query)}",
+                            "fields": ["question_rough_cut.analyzed", "question_fine_cut.analyzed"]
                         }}
                     }},
                 "size": {self.cfg.RETRIEVAL.LIMIT},
@@ -85,13 +119,9 @@ class ES:
             id=docid, index=index, fields='{}.analyzed'.format(
                 field))['term_vectors']['{}.analyzed'.format(field)]['terms']
 
-    def insert_mongo(self, index):
-        from qa.tools.mongo import Mongo
-        import pandas as pd
+    def insert_mongo(self, index, data):
         from tqdm import tqdm
-        mongo = Mongo(self.cfg, self.cfg.INVERTEDINDEX.DB_NAME)
-        data = pd.DataFrame(list(mongo.find(self.cfg.BASE.QA_COLLECTION,
-                                            {}))).dropna()
+        
         data['_id'] = data['_id'].apply(str)
         data['question_fine_cut'] = data['question_fine_cut'].progress_apply(
             lambda x: " ".join(x))

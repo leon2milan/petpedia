@@ -9,7 +9,7 @@ from tqdm.notebook import tqdm
 tqdm.pandas(desc="Data Process")
 
 cfg = get_cfg()
-mongo = Mongo(cfg, cfg.INVERTEDINDEX.DB_NAME)
+mongo = Mongo(cfg, cfg.BASE.QA_COLLECTION)
 seg = Segmentation(cfg)
 stopwords = Words(cfg).get_stopwords
 specialize = Words(cfg).get_specializewords
@@ -37,7 +37,7 @@ ex = [
     "阴门", "阴囊", "欲望", "拉萨", "阿拉伯", "黑木耳", "古牧", "睪丸", "性器", "舌头舔", "做一次", "舔蛋",
     "私密处", "大腿内侧", "隐私部位", "骚痒", "秘部", "犬交", "舔弄", "舔下面", "舔舐", "舔肛", "舔屁眼",
     "舔私处", "关键词", "奶头", "网站", "购买", "订购", "联系人", "客服热线", "定购", "价格", "地址",
-    "网址", "联系方式", "全身瘦", "祛痤疮", "肺炎", "冠状病毒", "新冠病毒", "包皮", "爱迪"
+    "网址", "联系方式", "全身瘦", "祛痤疮", "肺炎", "冠状病毒", "新冠病毒", "包皮", "爱迪", "毛相"
 ]
 data = [
     x.strip() for x in open(

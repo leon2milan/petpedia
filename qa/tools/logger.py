@@ -9,7 +9,7 @@ from collections import Counter
 from tabulate import tabulate
 from termcolor import colored
 
-from .fileUtils import PathManager
+from config import PathManager
 
 __all__ = ["setup_logger", "log_first_n", "log_every_n", "log_every_n_seconds"]
 

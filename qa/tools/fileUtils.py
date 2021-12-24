@@ -1,8 +1,6 @@
 import codecs
 import numpy as np
 import json
-from iopath.common.file_io import PathManager as PathManagerBase
-PathManager = PathManagerBase()
 
 
 def load_vec(file_voc):
@@ -24,4 +22,3 @@ def load_idf(file_idf):
     with codecs.open(file_idf, 'r', encoding='utf-8') as f:
         idf = json.loads(f.read())
     return idf
-

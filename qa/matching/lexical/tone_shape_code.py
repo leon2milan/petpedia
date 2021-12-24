@@ -4,11 +4,19 @@ import pypinyin
 from qa.tools.mongo import Mongo
 from qa.queryUnderstanding.querySegmentation import Words
 
+__all__ = ['TSC']
+
 
 class TSC:
+    __slot__ = [
+        'cfg', 'mongo', 'shengmuDict', 'yunmuDict', 'shapeDict', 'strokesDict',
+        'strokesDictReverse', 'hanziStructureDict', 'hanziStrokesDict',
+        'hanziSSCDict', 'fourcorner_encode'
+    ]
+
     def __init__(self, cfg) -> None:
         self.cfg = cfg
-        self.mongo = Mongo(cfg, cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(cfg, cfg.BASE.QA_COLLECTION)
         self.get_map()
 
     def get_map(self):
@@ -334,4 +342,3 @@ if __name__ == '__main__':
     print('变异词：', variabt_word)
 
     print('all: {}'.format(time.time() - s))
-

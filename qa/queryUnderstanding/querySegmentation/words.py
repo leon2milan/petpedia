@@ -12,6 +12,7 @@ from functools import reduce
 from collections import defaultdict
 
 logger = setup_logger()
+__all__ = ['Words']
 
 
 @Singleton
@@ -19,13 +20,17 @@ class Words():
     """
     获取各种词库
     """
-    _instance = None
+
     _first_init = True
+    __slot__ = [
+        'cfg', 'mongo', '_first_init', 'stop_words', 'sensitive_words',
+        'specialize_words', 'same_pinyin', 'same_stroke', 'synonym_words'
+    ]
 
     def __init__(self, cfg):
         self.cfg = cfg
 
-        self.mongo = Mongo(cfg, cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(cfg, cfg.BASE.QA_COLLECTION)
 
         if self._first_init:  # 默认True 第一次初始化置为False
             self._first_init = False
@@ -226,7 +231,7 @@ class Words():
         ])
         tmp = sorted(list(set(tmp + new_word + custom_word)))
 
-        if tmp != custom_word:
+        if len(tmp) > len(custom_word):
             with open(self.cfg.DICTIONARY.CUSTOM_WORDS, 'w') as f:
                 for word in tmp:
                     f.write(word + '\n')

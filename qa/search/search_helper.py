@@ -3,11 +3,15 @@ from config import get_cfg
 from qa.queryUnderstanding.querySegmentation import Words
 from qa.tools.ahocorasick import Ahocorasick
 
+__all__ = ['SearchHelper']
+
 
 class SearchHelper:
+    __slot__ = ['cfg', 'mongo', 'sen_detector']
+
     def __init__(self, cfg) -> None:
         self.cfg = cfg
-        self.mongo = Mongo(cfg, self.cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(cfg, self.cfg.BASE.QA_COLLECTION)
         self.build_sensetive_detector()
 
     def build_sensetive_detector(self):
@@ -19,10 +23,10 @@ class SearchHelper:
 
     def sensetive_detect(self, query):
         res = self.sen_detector.search_all(query)
-        flag = False 
+        flag = False
         if len(res) > 0:
             flag = True
-            res = [query[x[0]: x[1] + 1] for x in res]
+            res = [query[x[0]:x[1] + 1] for x in res]
         return flag, res
 
     def hot_query(self):

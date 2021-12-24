@@ -12,7 +12,7 @@ hnswlib
 fvcore
 iopath
 omegaconf
-lac
+jieba_fast
 pandas
 sklearn
 gensim==3.8.1

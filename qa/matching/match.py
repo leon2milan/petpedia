@@ -6,9 +6,12 @@ from qa.matching import Matching
 from config import get_cfg
 
 logger = setup_logger()
+__all__ = ['Similarity']
 
 
 class Similarity(Matching):
+    __slot__ = ['cfg', 'ls', 'ss', 'simcse']
+
     def __init__(self, cfg):
         super().__init__(cfg)
         self.cfg = cfg
@@ -17,7 +20,7 @@ class Similarity(Matching):
         if 'simcse' in self.cfg.MATCH.METHODS:
             self.simcse = SIMCSE(cfg)
 
-    def get_score_many(self, query, candidate_list):
+    def get_score_many(self, query, candidate_list, candidate_cut_list=None):
         if not candidate_list or not query:
             return []
         scores = []
@@ -29,8 +32,13 @@ class Similarity(Matching):
             else:
                 raise TypeError(
                     f"simCSE does not support {type(candidate_list)}")
-        query_list = self.seg.cut(query)
-        candidate_cut_list = self.seg.cut(candidate_list)
+        query_list = self.seg.cut(query) if isinstance(query, str) else query
+        query = "".join(query) if isinstance(query, list) else query
+        candidate_cut_list = self.seg.cut(
+            candidate_list
+        ) if candidate_cut_list is None else candidate_cut_list
+        candidate_list = ["".join(x) for x in candidate_list]
+
         res = []
         for i in range(len(candidate_cut_list)):
             score = self.get_score(query, candidate_list[i], query_list,

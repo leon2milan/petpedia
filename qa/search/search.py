@@ -9,19 +9,24 @@ from qa.queryUnderstanding.queryReformat.queryCorrection.correct import \
 from qa.queryUnderstanding.queryReformat.queryNormalization import \
     Normalization
 from qa.retrieval.retrieval import BasicSearch
+from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.tools import setup_logger
 from qa.tools.utils import flatten
 from qa.contentUnderstanding.content_profile import ContentUnderstanding
 
-
 logger = setup_logger(name='Search Advance')
+__all__ = ['AdvancedSearch']
 
 
 class AdvancedSearch():
+    __slot__ = ['cfg', 'normalize', 'bs', 'sc', 'cs', 'seg', 'stopwords']
+
     def __init__(self, cfg) -> None:
         logger.info('Initializing Advanced Search Object ....')
         self.cfg = cfg
         self.normalize = Normalization(self.cfg)
+        self.seg = Segmentation(cfg)
+        self.stopwords = Words(cfg).get_stopwords
         self.bs = BasicSearch(self.cfg)
         if self.cfg.RETRIEVAL.DO_CORRECT:
             self.sc = SpellCorrection(self.cfg)
@@ -44,7 +49,8 @@ class AdvancedSearch():
         [BEST_MATCH][0] -> {"docid", "doc", "score"}
         """
         for i in result:
-            logger.debug("match_type: {}, doc: {}, docid: {}, score: {}." .format(i['match_type'], i["doc"], i["docid"], i["score"]))
+            logger.info("match_type: {}, docid: {}, score: {}.".format(
+                i['match_type'], i["docid"], i["score"]))
 
     def __left_sentence_bound(self, pos, content):
         """
@@ -187,9 +193,7 @@ class AdvancedSearch():
 
         for j in result:
             ind = j["doc"]
-            ind = ind['question'] + ' ' + ind[
-                'answer'] if self.cfg.INVERTEDINDEX.USE_ANSWER else ind[
-                    'question']
+            ind = ind['question']
             j["abstract"] = self.__abstract_one(query_list, ind)
 
     def __query_analyze_has(self, query, operations):
@@ -236,11 +240,19 @@ class AdvancedSearch():
         for i in operations:
             i["mustnot"] = query
 
-    def __preprocess(self, query):
+    def __preprocess(self, query, _clean=True, cut=False, is_rough=True):
         query = query.strip()
         if query == "":
             return ""
-        query = clean(query, is_tran=True, has_emogi=True)
+        if _clean:
+            query = clean(query,
+                          is_tran=self.cfg.RETRIEVAL.HANDLE_TRANS,
+                          has_emogi=self.cfg.RETRIEVAL.HANDLE_EMOGI)
+        if cut:
+            query = [
+                x for x in self.seg.cut(query, is_rough=is_rough)
+                if x not in self.stopwords
+            ]
         return query
 
     def __query_analyze(self, query):
@@ -266,21 +278,46 @@ class AdvancedSearch():
         if self.cfg.RETRIEVAL.DO_EXPANSION:
             pass
 
+        rough_query = self.__preprocess(query,
+                                        _clean=False,
+                                        cut=True,
+                                        is_rough=True)
+
+        fine_query = self.__preprocess(query,
+                                       _clean=False,
+                                       cut=True,
+                                       is_rough=False)
         # BEST_MATCH： query 归一/原句 精确匹配 + knowled graph
         r.append({
-            "query": query,
-            "type": "BEST_MATCH",
+            "query":
+            query,
+            "fine_query":
+            fine_query if self.cfg.RETRIEVAL.WELL_ROUTE.SEG_GRAINED
+            in ['fine', 'both'] else None,
+            "rough_query":
+            rough_query if self.cfg.RETRIEVAL.WELL_ROUTE.SEG_GRAINED
+            in ['rough', 'both'] else None,
+            "type":
+            "BEST_MATCH",
             "filter": {
                 'species': content_tag['SPECIES'],
                 'sex': content_tag['SEX'],
                 'age': content_tag['AGE'],
             }
         })
-        
+
         # WELL_MATCH： query 原句  模糊搜索
         r.append({
-            "query": query,
-            "type": "WELL_MATCH",
+            "query":
+            query,
+            "fine_query":
+            fine_query if self.cfg.RETRIEVAL.WELL_ROUTE.SEG_GRAINED
+            in ['fine', 'both'] else None,
+            "rough_query":
+            rough_query if self.cfg.RETRIEVAL.WELL_ROUTE.SEG_GRAINED
+            in ['rough', 'both'] else None,
+            "type":
+            "WELL_MATCH",
             "filter": {
                 'species': content_tag['SPECIES'],
                 'sex': content_tag['SEX'],
@@ -295,10 +332,11 @@ class AdvancedSearch():
         #         "type": "PART_MATCH",
         #         "key_words": tags
         #     })
+
         return r
 
     def search(self, query):
-        query = self.__preprocess(query)
+        query = self.__preprocess(query, _clean=True, cut=False)
         if query == "":
             return {}
 
@@ -308,8 +346,6 @@ class AdvancedSearch():
         # 计算摘要
 
         self.__abstract(seek_query_list, result)
-
-        self.print_result(result)
 
         result = self.__format_to(result, "LIST")
         return result

@@ -16,7 +16,7 @@ from abc import ABCMeta, abstractmethod
 from qa.tools.utils import Singleton
 
 logger = setup_logger()
-__all__ = ["ANN", "HNSW"]
+__all__ = ["HNSW"]
 
 
 class ANN(metaclass=ABCMeta):
@@ -40,13 +40,17 @@ class ANN(metaclass=ABCMeta):
 @Singleton
 class HNSW(ANN):
     __type = "hnsw"
+    __slot__ = [
+        'cfg', 'is_rough', 'seg', 'stopwords', 'mongo', 'embedding',
+        'sent_func', 'hnsw', 'emb_size', 'id_map'
+    ]
 
     def __init__(self, cfg, is_rough) -> None:
         self.cfg = cfg
         self.is_rough = is_rough
         self.seg = Segmentation(cfg)
         self.stopwords = Words(cfg).get_stopwords
-        self.mongo = Mongo(self.cfg, self.cfg.INVERTEDINDEX.DB_NAME)
+        self.mongo = Mongo(self.cfg, self.cfg.BASE.QA_COLLECTION)
 
         logger.info('Loading Vector based retrieval model {} ....'.format(
             'rough' if is_rough else 'fine'))
@@ -57,10 +61,14 @@ class HNSW(ANN):
         self.emb_size = self.cfg.REPRESENTATION.WORD2VEC.EMBEDDING_SIZE if 'BERT' not in self.cfg.RETRIEVAL.HNSW.SENT_EMB_METHOD else self.cfg.REPRESENTATION.BERT.EMBEDDING_SIZE
 
         self.hnsw = self.load(is_rough=self.is_rough)
-        self.id_map = pd.DataFrame(
+        self.id_map = self.get_id_mapping()
+
+    def get_id_mapping(self):
+        qa = pd.DataFrame(
             list(self.mongo.find(self.cfg.BASE.QA_COLLECTION,
                                  {})))[['_id', 'index']]
-        self.id_map = dict(zip(self.id_map['index'], self.id_map['_id']))
+        id_map = dict(zip(qa['index'], qa['_id']))
+        return id_map
 
     def train(self, data, to_file: str, ids=None):
         '''
@@ -122,7 +130,7 @@ class HNSW(ANN):
 
         col = 'question_rough_cut' if is_rough else 'question_fine_cut'
         data['embedding'] = data[col].progress_apply(
-            lambda x: self.sent_func(x))
+            lambda x: self.sent_func(x).reshape(1, -1))
         data['embedding'] = data['embedding'].progress_apply(
             lambda x: x
             if x.shape[1] == self.emb_size else np.zeros((1, self.emb_size)))
@@ -214,9 +222,11 @@ if __name__ == "__main__":
     rough = HNSW(cfg, is_rough=True)
     test = [['想', '养', '哈士奇', '应该', '注意'], ['想', '养', '狗', '应该', '注意'],
             ['家', '猫', '半夜', '瞎', '叫唤', '咋办'], ['猫', '骨折', '了'],
-            ['我', '想', '养', '个', '哈士奇', '，', '应该', '注意', '什么', '？'],
+            ['我', '想', '养个', '哈士奇', '，', '应该', '注意', '什么', '？'],
             ['狗狗', '容易', '感染', '什么', '疾病'], ['哈士奇', '老', '拆家'],
-            [['犬细小'], ['哈士奇', '老', '拆', '家']], ['哈士奇', '拆家']]
+            [['犬细小'], ['哈士奇', '老', '拆', '家']], ['哈士奇', '拆家'],
+            ['我想', '养个', '猫', '应该', '注意'], ['我想', '养个', '哈士奇', '应该', '注意'],
+            ['我想', '养个', '狗', '应该', '注意']]
     for x in test:
         s = time.time()
         print('query', x, 'rough', [[(x['docid'], x['score'], x['index'])
@@ -225,8 +235,8 @@ if __name__ == "__main__":
               time.time() - s)
 
     fine = HNSW(cfg, is_rough=False)
-    test = [['哈士奇', '拆', '家'], ['狗', '老', '拆', '家'], ['哈士奇', '老', '拆', '家'],
-            ['犬细小']]
+    test = [['哈士奇', '拆家'], ['狗', '老', '拆家', '怎么办'], ['哈士奇', '老', '拆家'],
+            ['犬', '细小']]
     for x in test:
         s = time.time()
         print('fine', [[y['docid'] for y in x] for x in fine.search(x)],

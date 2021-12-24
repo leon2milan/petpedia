@@ -1,14 +1,19 @@
 from qa.matching import Matching
 from config import get_cfg
 from scipy import spatial
+from scipy.special import softmax
+
 import math
 from qa.queryUnderstanding.representation import W2V, Embedding
 import numpy as np
-
 from qa.tools.utils import Singleton
+
+__all__ = ['simical', 'SemanticSimilarity']
 
 
 class simical():
+    __slot__ = ['vec1', 'vec2']
+
     def __init__(self, vec1, vec2):
         self.vec1 = vec1
         self.vec2 = vec2
@@ -44,27 +49,27 @@ class simical():
         return self.Triangle() * self.Sector()
 
 
-def softmax(x):
-
-    y = np.exp(x - np.max(x))
-    f_x = y / np.sum(np.exp(x))
-    return f_x
-
 @Singleton
 class SemanticSimilarity(Matching):
+    __slot__ = ['cfg', 'rough_w2v', 'fine_w2v']
+
     def __init__(self, cfg):
         super().__init__(cfg)
         self.rough_w2v = W2V(cfg, is_rough=True)
         self.fine_w2v = W2V(cfg)
 
     def delete_diff(self, query, is_rough=True):
+        if len(query) == 1:
+            return [1.0]
         model = self.rough_w2v.model if is_rough else self.fine_w2v.model
         base = Embedding.wam(query, model, agg='mean')
-        return softmax([
-            1 - spatial.distance.cosine(
-                Embedding.get_embedding(model, x), base)
+        res = np.array([
+            1 -
+            spatial.distance.cosine(Embedding.get_embedding(model, x), base)
             for x in query
         ])
+        res = np.nan_to_num(res)
+        return softmax(res)
 
     def get_score(self, s1, s2, mode='cosine', is_rough=True):
         model = self.rough_w2v.model if is_rough else self.fine_w2v.model

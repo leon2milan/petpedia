@@ -6,10 +6,14 @@ from qa.queryUnderstanding.querySegmentation.words import Words
 
 from qa.tools import flatten
 import sys
+
 sys.setrecursionlimit(10000)
+__all__ = ['Trie']
 
 
 class Trie:
+    __slot__ = ['cfg', 'strings', 'dict', 'count_strings', 'path']
+
     def __init__(self, cfg, path=''):
         self.cfg = cfg
         self.strings = []

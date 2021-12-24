@@ -14,6 +14,7 @@ from qa.tools.neo import NEO4J
 from qa.tools.utils import Singleton
 
 logger = setup_logger(name='entity_linking')
+__all__ = ['EntityLink']
 
 
 class QuestionEntityPair():
@@ -129,6 +130,10 @@ class CandiateEntityScorePair():
 
 @Singleton
 class EntityLink(object):
+    __slot__ = [
+        'cfg', 'w2v', 'word', 'normalization', 'seg', 'es', 'neo4j', 'gbm'
+    ]
+
     def __init__(self, cfg):
         self.cfg = cfg
         self.w2v = W2V(self.cfg, is_rough=True)
@@ -158,8 +163,7 @@ class EntityLink(object):
                 == species) or (len(re.findall(r'（.*）', y)) == 0)
         ]
         logger.debug(f"query: {query}, normalize1: {normalize}")
-        normalize = [(x, self.word.get_class(x)) for x in normalize
-                     if x]
+        normalize = [(x, self.word.get_class(x)) for x in normalize if x]
         logger.debug(f"query: {query}, normalize2: {normalize}")
         return list(set(normalize))
 

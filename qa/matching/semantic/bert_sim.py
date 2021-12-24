@@ -16,9 +16,12 @@ from transformers import (BertConfig, BertForSequenceClassification,
 from transformers.data.processors.utils import DataProcessor
 
 logger = setup_logger()
+__all__ = ['BertSim']
 
 
 class BertSim:
+    __slot__ = ['cfg', 'max_len', 'tokenizer', 'device', 'model']
+
     def __init__(self, cfg, model_path) -> None:
         self.cfg = cfg
 
@@ -105,11 +108,11 @@ class BertSim:
                 logger.debug("*** Example ***")
                 logger.debug("guid: %s" % (example.guid))
                 logger.debug("input_ids: %s" %
-                            " ".join([str(x) for x in input_ids]))
+                             " ".join([str(x) for x in input_ids]))
                 logger.debug("attention_mask: %s" %
-                            " ".join([str(x) for x in attention_mask]))
+                             " ".join([str(x) for x in attention_mask]))
                 logger.debug("token_type_ids: %s" %
-                            " ".join([str(x) for x in token_type_ids]))
+                             " ".join([str(x) for x in token_type_ids]))
                 logger.debug("label: %s " % str(label))
 
             features.append(
