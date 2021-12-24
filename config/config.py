@@ -6,9 +6,6 @@ import inspect
 import logging
 from fvcore.common.config import CfgNode as _CfgNode
 
-from iopath.common.file_io import PathManager as PathManagerBase
-
-PathManager = PathManagerBase()
 
 
 class CfgNode(_CfgNode):

@@ -1,7 +1,13 @@
-from .config import CfgNode, get_cfg, global_cfg, set_global_cfg, configurable, PathManager
 import os
 
+from iopath.common.file_io import PathManager as PathManagerBase
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+
+
+
+PathManager = PathManagerBase()
+
 directories = [
     'logs', 'gunicorn', 'data', 'models', 'data/knowledge_graph',
     'data/segmentation', 'data/dictionary', 'data/intent/',
@@ -18,5 +24,4 @@ for i in directories:
     if not os.path.exists(path):
         os.mkdir(path)
 
-
-__all__ = ['get_cfg', 'PathManager']
+from .config import CfgNode, configurable, get_cfg, global_cfg, set_global_cfg
