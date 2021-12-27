@@ -73,7 +73,8 @@ def cut_sentence_with_quotation_marks(text):
 
 
 def clean(s, is_tran=False, has_emogi=False, keep_zh=False):
-    s = re.sub('\s+', '', s)
+    s = re.sub('[\s+\.\!\/_,$%^*(+\"\')]+|[+——()?【】“”！，。？、~@#￥%……&*（）]+', '',
+               s)
     s = cap2lower(s)
     s = full2half(s)
     if is_tran:
