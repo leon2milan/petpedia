@@ -323,8 +323,7 @@ class BasicSearch():
 
             s = time.time()
             if query["type"] == "WELL_MATCH":
-                term_weight = self.sim.ss.delete_diff(query['rough_query'],
-                                                      is_rough=False)
+                term_weight = self.sim.ss.delete_diff(query['rough_query'])
                 if query['rough_query'] is not None and query['rough_query']:
 
                     tmp = flatten(self.rough_hnsw.search(query['rough_query']))

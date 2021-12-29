@@ -1,5 +1,5 @@
 from qa.matching import Matching
-
+import Levenshtein
 __all__ = ['LexicalSimilarity']
 
 
@@ -59,12 +59,26 @@ class LexicalSimilarity(Matching):
         jaccard = 1.0 * len(ret1) / len(ret2)
 
         return jaccard
+    
+    @staticmethod
+    def levenshtein_multi(s1, s2_list):
+        res = []
+        for i in s2_list:
+            res.append(Levenshtein.ratio(s1, i))
+        return res
+
+    @staticmethod
+    def jaccard_multi(s1, s2_list):
+        res = []
+        for i in s2_list:
+            res.append(LexicalSimilarity.jaccard(s1, i))
+        return res
 
     def get_score(self, s1, s2, model='cosine'):
         if model == 'jaccard':
-            sim = LexicalSimilarity.jaccard(s1, s2)
+            sim = LexicalSimilarity.jaccard_multi(s1, s2)
         elif model == 'edit':
-            sim = LexicalSimilarity.levenshteinDistance(s1, s2)
+            sim = LexicalSimilarity.levenshtein_multi(s1, s2)
         elif model == 'lcs':
             sim, _ = LexicalSimilarity.lcs(s1, s2)
         return sim

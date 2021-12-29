@@ -4,8 +4,6 @@ import re
 
 from config import get_cfg
 from qa.queryUnderstanding.preprocess.preprocess import clean
-from qa.queryUnderstanding.queryReformat.queryCorrection.correct import \
-    SpellCorrection
 from qa.queryUnderstanding.queryReformat.queryNormalization import \
     Normalization
 from qa.retrieval.retrieval import BasicSearch
@@ -29,6 +27,8 @@ class AdvancedSearch():
         self.stopwords = Words(cfg).get_stopwords
         self.bs = BasicSearch(self.cfg)
         if self.cfg.RETRIEVAL.DO_CORRECT:
+            from qa.queryUnderstanding.queryReformat.queryCorrection.correct import \
+                SpellCorrection
             self.sc = SpellCorrection(self.cfg)
         self.cs = ContentUnderstanding(self.cfg)
 

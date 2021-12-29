@@ -40,13 +40,14 @@ if __name__ == "__main__":
 
     pr = cProfile.Profile()
     pr.enable()
+    s = time.time()
     for i in test:
         start = time.time()
         res = searchObj.search(i)
         logger.info('search takes time: {}'.format(time.time() - start))
         print(i, [(x['doc']['question'], x['score']) for x in res])
         json.loads(json.dumps({"result": res}))
-    
+    print(f'it takes: {time.time() - s}')
     pr.disable()
     s = io.StringIO()
     sortby = "cumtime"  # 仅适用于 3.6, 3.7 把这里改成常量了

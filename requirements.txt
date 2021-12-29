@@ -31,7 +31,7 @@ paddlepaddle-gpu==2.2.1
 # ddparser too slow
 lightgbm
 neo4j
-levenshtein
+python-Levenshtein
 pytest
 pytest-xdist
 pytest-timeout
