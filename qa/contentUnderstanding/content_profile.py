@@ -59,6 +59,11 @@ class ContentUnderstanding:
                 ]
                 for col in cols:
                     del content_tag[col]
+            elif isinstance(self.keyword[key], dict) and key not in [
+                    'SYMPTOM', 'DISEASE', 'BREED'
+            ]:
+                content_tag[key] = ["|".join(content_tag[key]) for x in content_tag.get(key, []) if x]
+
         content_tag['SPECIES'] = list(
             set([y[1] for y in entity if y[1] in ['DOG', 'CAT']
                  ])) if not content_tag['SPECIES'] else content_tag['SPECIES']

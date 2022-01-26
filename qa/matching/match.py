@@ -39,7 +39,6 @@ class Similarity(Matching):
             candidate_list
         ) if candidate_cut_list is None else candidate_cut_list
         candidate_list = ["".join(x) for x in candidate_list]
-
         return self.get_score(query, candidate_list, query_list,
                               candidate_cut_list)
 

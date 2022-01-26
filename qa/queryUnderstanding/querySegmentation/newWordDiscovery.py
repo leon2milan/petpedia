@@ -314,15 +314,19 @@ def find_word(file_like):
 
 if __name__ == '__main__':
     import os
+    from qa.tools import flatten
     stime = time.time()
     cfg = get_cfg()
     seg = Segmentation(cfg)
+
+    specialize = Words(cfg).get_specializewords
+    stopwords = Words(cfg).get_stopwords
     qa = pd.read_table(cfg.BASE.CHAR_FILE, header=None, names=['content'])
     qa['content'] = qa['content'].apply(
         lambda x: "".join(x.split())).drop_duplicates()
     qa = qa['content'].drop_duplicates().values.tolist()
 
-    # word = pd.DataFrame(find_word("\n".join(map(str, qa[:1296759]))),
+    # word = pd.DataFrame(find_word("\n".join(map(str, qa[:600000]))),
     #                     columns=[
     #                         'word', 'term freq', 'aggregation coefficien',
     #                         'left entropy', 'right entropy'])
@@ -330,7 +334,7 @@ if __name__ == '__main__':
     # etime = time.time()
     # print("ALL DONE! 耗时 {} s".format(etime - stime))
 
-    word = pd.DataFrame(find_word("\n".join(map(str, qa[1296759:]))),
+    word = pd.DataFrame(find_word("\n".join(map(str, qa[600000:]))),
                         columns=[
                             'word', 'term freq', 'aggregation coefficien',
                             'left entropy', 'right entropy'
@@ -364,45 +368,47 @@ if __name__ == '__main__':
         old = pd.read_csv(os.path.join(cfg.DICTIONARY.CUSTOM_WORDS))
         new = pd.concat([new, old]).drop_duplicates().reset_index(drop=True)
     word = copy.deepcopy(new)
-    # print(len(set(word['word'].drop_duplicates().values.tolist()) - set(cuts)))
-    word['word'] = word['word'].apply(lambda x: trans2simple(x))
-    word['cut'] = word['word'].apply(lambda x: seg.cut(x, mode='pos'))
-    word['len'] = word['cut'].apply(lambda x: len(x[0]))
-    word['filter'] = word['cut'].apply(
-        lambda x: False if 'c' in x[1] or 'd' in x[1] or 'm' in x[1] or 'r' in
-        x[1] or 'f' in x[1] or '不要吃' in x[0] or '有助于' in x[0] or
-        '可能会' in x[0] or '可以' in x[0] or '能够' in x[0] or '希望' in x[0] or '地' in
-        x[0] or '有利于' in x[0] or '有没有' in x[0] or '会' in x[0] or '能' in x[
-            0] or '给' in x[0] or '不要' in x[0] or '现在' in x[0] or '不能' in x[
-                0] or '不需要' in x[0] or '是不是' in x[0] or '应当' in x[0] or '作为' in
-        x[0] or '才会' in x[0] or '受到' in x[0] or '还会' in x[0] or '不会' in x[
-            0] or '应该' in x[0] or '一定要' in x[0] or '成为' in x[0] or '更容易' in x[
-                0] or '还要' in x[0] or '才能' in x[0] or '只能' in x[0] else True)
-    word['score'] = word[[
-        'aggregation coefficien', 'left entropy', 'right entropy'
-    ]].apply(lambda row: get_score(row), axis=1)
-    word = word[(word['len'] > 1) & (word['filter'])]
-    word['type'] = word['cut'].apply(lambda x: ' '.join(x[1]))
-    word['word_length'] = word['word'].apply(len)
+
+    from functools import reduce
+    entity_word = flatten([[k, v]
+                           for k, v in reduce(lambda a, b: dict(a, **b),
+                                              specialize.values()).items()])
+
+    word['word'] = word['word'].progress_apply(
+        lambda x: trans2simple(x)).dropna()
+    word['word'] = word['word'].progress_apply(
+        lambda x: re.sub('\（.*\）', '', x))
+    word = word.drop_duplicates().dropna()
+    word['cut'] = word['word'].progress_apply(
+        lambda x: list(seg.cut(x, mode='pos')))
+    word['len'] = word['cut'].progress_apply(lambda x: len(x[0]))
+    word['stopwords'] = word['cut'].progress_apply(
+        lambda x: "".join([y for y in x[0] if y in stopwords]))
+
+    word = word[word['stopwords'] == '']
+    word = word[~word['word'].
+                isin([re.sub('\（.*\）', '', x) for x in entity_word])]
+    word = word[(word['len'] > 1)]
     word = word[~word['word'].str.startswith('月')]
-    word = word[~word['word'].str.startswith('不')]
-    word = word[~word['word'].str.startswith('日')]
     word = word[~word['word'].str.startswith('都')]
-    word = word[~word['word'].str.startswith('就')]
-    word = word[~word['word'].str.startswith('让')]
-    word = word[~word['word'].str.startswith('等')]
-    word = word[~word['word'].str.startswith('很')]
-    word = word[~word['word'].str.startswith('也')]
-    word = word[~word['word'].str.startswith('会')]
-    word = word[~word['word'].str.endswith('做')]
-    word = word[~word['word'].str.endswith('患')]
-    word = word[~word['word'].str.contains('价格')]
+    word = word[~word['word'].str.startswith('总')]
+    word = word[~word['word'].str.startswith('必')]
+    word = word[~word['word'].str.startswith('已')]
+    word = word[~word['word'].str.startswith('岁')]
+    word = word[~word['word'].str.startswith('请')]
+    word = word[~word['word'].str.startswith('还是')]
+    word = word[~word['word'].str.endswith('都')]
+    word = word[~word['word'].str.endswith('了')]
     exclude = [
-        '犬窝咳', '分为急性', '一般分为', '号楼', '度不够', '体成熟', '应及时', '受惊吓', '多大开始', '带著',
-        '做好防', '到六个月', '到一定程度', '你可以把', '我相信很多', '部肿胀', '着身子', '没法正常', '期过后',
-        '城小区', '大便软', '天中午', '将会增加', '层毛发', '得到处都是', '飞机耳', '骨骨折'
+        '定期给狗狗', '定期给猫咪', '犬窝咳', '分为急性', '一般分为', '号楼', '度不够', '体成熟', '应及时',
+        '受惊吓', '多大开始', '带著', '做好防', '到六个月', '到一定程度', '你可以把', '我相信很多', '部肿胀',
+        '着身子', '没法正常', '期过后', '喵想', '座最适合养', '城小区', '大便软', '天中午', '将会增加',
+        '层毛发', '得到处都是', '飞机耳', '骨骨折', '齿龈红', '凯恩更', '喵糖', '毯子或者', '钱买', '天之内',
+        '分成两', '中加入', '中含有一种', '中含有', '中还含有', '中获得', '左右即可', '期间不建议', '中富含',
+        '中可能含有', '中含有大量', '中含有一种', '中含有多种', '中都含有'
     ]
     word = word[~word['word'].isin(exclude)]
 
-    import os
-    word['word'].drop_duplicates().sort_values().to_csv(os.path.join(cfg.BASE.DATA_PATH, 'dictionary/segmentation/new_word.csv'), index=False)
+    word['word'].drop_duplicates().sort_values().to_csv(os.path.join(
+        cfg.BASE.DATA_PATH, 'dictionary/segmentation/new_word.csv'),
+                                                        index=False)

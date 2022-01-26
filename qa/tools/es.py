@@ -120,7 +120,7 @@ class ES:
 
     def insert_mongo(self, index, data):
         from tqdm import tqdm
-        
+
         data['_id'] = data['_id'].apply(str)
         data['question_fine_cut'] = data['question_fine_cut'].progress_apply(
             lambda x: " ".join(x))
@@ -128,13 +128,19 @@ class ES:
         data['question_rough_cut'] = data['question_rough_cut'].progress_apply(
             lambda x: " ".join(x))
 
+        data['tags'] = data[[
+            'breed_name', 'disease_name', 'symptom_name', 'AGE', 'SPECIES',
+            'SEX', 'DISEASE', 'BASIC', 'ATTRIBUTE', 'QUESTION', 'BEAUTY',
+            'HEALTHY', 'DOMESTICATE', 'BREED', 'PART', 'FOOD', 'DRUG'
+        ]].progress_apply(lambda row: " ".join([x for x in row if x]), axis=1)
+
         data = data[[
             'question_fine_cut', 'question_rough_cut', 'answer', "_id",
-            "question"
+            "question", "tags"
         ]]
         data.columns = [
             'question_fine_cut', 'question_rough_cut', 'answer', "_idx",
-            "question"
+            "question", "tags"
         ]
         for idx, row in tqdm(data.iterrows(), total=data.shape[0]):
             tmp = row.to_dict()

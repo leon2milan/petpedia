@@ -10,7 +10,7 @@ class ModelTest(unittest.TestCase):
         self.index = ['qa_v1']
 
     def test_predict(self):
-        expect_output = [208633]
+        expect_output = [207735]
         output = []
         for idx in self.index:
             output.append(self.es.es.count(index=idx)['count'])

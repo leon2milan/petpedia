@@ -9,13 +9,13 @@ class FasttextTest(unittest.TestCase):
         self.model_tester = Fasttext(cfg, 'two_intent')
         self.text = [
             "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
-            '我和的', '阿提桑诺曼底短腿犬', '胰腺炎'
+            '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', '习大大', '犬细小病毒的症状'
         ]
 
     def test_predict(self):
         expect_output = [
             'pet_qa', 'pet_qa', 'pet_qa', 'pet_qa', 'pet_qa', 'pet_qa',
-            'pet_qa', 'chitchat', 'pet_qa', 'pet_qa'
+            'pet_qa', 'chitchat', 'pet_qa', 'pet_qa', 'sensetive', 'pet_qa'
         ]
         output = []
         for x in self.text:

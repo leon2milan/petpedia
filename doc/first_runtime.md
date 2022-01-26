@@ -1,4 +1,5 @@
-# Pet Robot
+# Petpedia
+This a full project covered question answering, self-diagnose, search etc. We want provide sweet service for customer, less anxiety, more detail info, better nursing and feeding for their pet.
 # Work Flow
 ## Preprocess
 note: all detail config need set in `config/defaults.py`. It better to run `make clean` before any action.

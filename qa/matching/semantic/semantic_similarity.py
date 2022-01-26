@@ -27,10 +27,10 @@ class Simcal():
         return abs(self._Norm(self.vec1) - self._Norm(self.vec2))
 
     def Euclidean(self):
-        return spatial.distance.euclidean(self.vec1, self.vec2)
+        return scipy.spatial.distance.euclidean(self.vec1, self.vec2)
 
     def Cosine(self):
-        return 1 - spatial.distance.cosine(self.vec1, self.vec2)
+        return 1 - scipy.spatial.distance.cosine(self.vec1, self.vec2)
 
     def Triangle(self):
         # not a true conclusion
@@ -163,7 +163,7 @@ class SemanticSimilarity(Matching):
         v2 = Embedding.wam(s2, model, agg='mean')
         f_ssim = []
         if mode == 'cosine':
-            f_ssim = scipy.spatial.distance.cdist(v1, v2, 'cosine').reshape(-1)
+            f_ssim = scipy.spatial.distance.cdist(v1.reshape(1, -1), v2, 'cosine').reshape(-1)
         elif mode == 'euclidean':
             f_ssim = euclidean(v1, v2)
         elif mode == 'ts_ss':

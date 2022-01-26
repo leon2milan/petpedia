@@ -8,14 +8,20 @@ from qa.tools import setup_logger
 from qa.tools.utils import flatten
 from qa.retrieval.manual.manual import Manual
 
+from joblib import Parallel, delayed
+import dill 
+
 logger = setup_logger()
 __all__ = ['BasicSearch']
 
 
+def unwrap_self(arg, **kwarg):
+    return BasicSearch.search_helper(*arg, **kwarg)
+
+
 class BasicSearch():
     __slot__ = [
-        'cfg', 'seg', 'stopwords', 'sim', 'tr', 'rough_hnsw', 'fine_hnsw',
-        'rule'
+        'cfg', 'sim', 'tr', 'rough_hnsw', 'fine_hnsw', 'rules'
     ]
 
     def __init__(self, cfg):
@@ -284,6 +290,120 @@ class BasicSearch():
         logger.debug("part 检索结果数: %s" % len(sort_docid))
         return sort_docid
 
+    def search_helper(self, query):
+        if not query.get('rough_query') and not query.get('fine_query'):
+            result = []
+        
+        logger.debug(
+            "query 检索原语: {}, rough cut 后 {}, fine cut 后 {}".format(
+                query['query'], query.get('rough_query'),
+                query.get('fine_query')))
+        s = time.time()
+        if query["type"] == "BEST_MATCH":
+            tmp = []
+            if self.cfg.RETRIEVAL.BEST_ROUTE.DO_KBQA:
+                pass
+
+            if self.cfg.RETRIEVAL.WELL_ROUTE.USE_ES:
+                tmp += self.tr.search(query['query'], query['rough_query'],
+                                      query['fine_query'], query['type'])
+
+            result = self.__post_best_match(query["query"],
+                                            tmp,
+                                            limit=self.cfg.RETRIEVAL.LIMIT)
+
+        if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+            logger.info('BEST_MATCH takes: {}'.format(time.time() - s))
+
+        s = time.time()
+        if query["type"] == "WELL_MATCH":
+            tmp = []
+            term_weight = self.sim.ss.delete_diff(query['rough_query'])
+            if query['rough_query'] is not None and query['rough_query']:
+                tmp += flatten(self.rough_hnsw.search(query['rough_query']))
+
+            if query['fine_query'] is not None and query['fine_query']:
+                tmp += flatten(self.fine_hnsw.search(query['fine_query']))
+
+            if self.cfg.RETRIEVAL.WELL_ROUTE.USE_ES:
+                tmp += self.tr.search(query['query'], query['rough_query'],
+                                      query['fine_query'], query['type'])
+            result = self.__post_well_match(list(
+                zip(query['rough_query'], term_weight)),
+                                            tmp,
+                                            limit=self.cfg.RETRIEVAL.LIMIT)
+
+        if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+            logger.info('WELL_MATCH takes: {}'.format(time.time() - s))
+
+        s = time.time()
+        if query["type"] == "PART_MATCH":
+            if self.cfg.RETRIEVAL.PART_ROUTE.USE_CONTENT_PROFILE:
+                pass
+
+        if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+            logger.info('PART_MATCH takes: {}'.format(time.time() - s))
+        return {'type': query['type'], 
+                'result': self.__keywords_filter(result, query["filter"])}
+
+    def search2(self, seek_query_list):
+        if seek_query_list == []:
+            return {}
+
+        result = {}
+        result["BEST_MATCH"] = []
+        result["WELL_MATCH"] = []
+        result["PART_MATCH"] = []
+        notresult = []
+
+        results = Parallel(n_jobs=2, backend='threading')(
+            delayed(unwrap_self)((self, query)) for query in seek_query_list)
+        for res in results:
+            if res['type'] == 'BEST_MATCH':
+                result["BEST_MATCH"] += res['result']
+            elif res['type'] == 'WELL_MATCH':
+                result["WELL_MATCH"] += res['result']
+            elif res['type'] == 'PART_MATCH':
+                result["PART_MATCH"] += res['result']
+
+        s = time.time()
+        # l0 截断
+        for match_type in result:
+            result[match_type] = self.__remove_mustnot(result[match_type],
+                                                       notresult)
+            result[match_type] = self.__remove_invalid_doc(result[match_type])
+
+        if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+            logger.info('__remove takes: {}'.format(time.time() - s))
+
+        # 去重
+        s = time.time()
+        result = self.__filter_duplicate(result)
+        logger.debug('retrieval result after deduplicated: {}'.format(result))
+
+        if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+            logger.info('__filter_duplicate takes: {}'.format(time.time() - s))
+
+        # l1 相关性排序 粗排
+        s = time.time()
+        result = self.__cal_similarity([
+            x['rough_query'] for x in seek_query_list
+            if x['type'] == 'BEST_MATCH'
+        ][0], result)
+
+        if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+            logger.info('Cal simlarity takes: {}'.format(time.time() - s))
+
+        s = time.time()
+        result = self.sort_result(result)
+        result = self.limit(result, self.cfg.RETRIEVAL.LIMIT)
+        logger.debug('retrieval final result: {}'.format(result))
+
+        if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+            logger.info('sort_result takes: {}'.format(time.time() - s))
+
+        return result
+
     def search(self, seek_query_list):
         if seek_query_list == []:
             return {}
@@ -335,16 +455,16 @@ class BasicSearch():
                         logger.info('rough hnsw WELL_MATCH takes: {}'.format(
                             time.time() - s))
 
-                if query['fine_query'] is not None and query['fine_query']:
-                    tmp = flatten(self.fine_hnsw.search(query['fine_query']))
+                # if query['fine_query'] is not None and query['fine_query']:
+                #     tmp = flatten(self.fine_hnsw.search(query['fine_query']))
 
-                    result["WELL_MATCH"] += self.__post_well_match(
-                        list(zip(query['rough_query'], term_weight)),
-                        tmp,
-                        limit=self.cfg.RETRIEVAL.LIMIT)
-                    if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
-                        logger.info('fine hnsw WELL_MATCH takes: {}'.format(
-                            time.time() - s))
+                #     result["WELL_MATCH"] += self.__post_well_match(
+                #         list(zip(query['rough_query'], term_weight)),
+                #         tmp,
+                #         limit=self.cfg.RETRIEVAL.LIMIT)
+                #     if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
+                #         logger.info('fine hnsw WELL_MATCH takes: {}'.format(
+                #             time.time() - s))
 
                 if self.cfg.RETRIEVAL.WELL_ROUTE.USE_ES:
                     tmp = self.tr.search(query['query'], query['rough_query'],
@@ -447,7 +567,10 @@ if __name__ == "__main__":
     cfg = get_cfg()
     bs = BasicSearch(cfg)
     query = [{
-        'query': '金毛',
+        'query': '犬细小',
+        'rough_query': ['犬细小'],
+        'fine_query': ['犬', '细小'],
+        'query': '犬细小',
         'type': 'BEST_MATCH',
         'filter': {
             'species': ['DOG'],
@@ -455,7 +578,9 @@ if __name__ == "__main__":
             'age': []
         }
     }, {
-        'query': '金毛',
+        'query': '犬细小',
+        'rough_query': ['犬细小'],
+        'fine_query': ['犬', '细小'],
         'type': 'WELL_MATCH',
         'filter': {
             'species': ['DOG'],
@@ -463,7 +588,9 @@ if __name__ == "__main__":
             'age': []
         }
     }, {
-        'query': '金毛',
+        'query': '犬细小',
+        'rough_query': ['犬细小'],
+        'fine_query': ['犬', '细小'],
         'type': 'PART_MATCH',
         'filter': {
             'species': ['DOG'],

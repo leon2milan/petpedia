@@ -38,7 +38,7 @@ if __name__ == "__main__":
     ]
     import cProfile, pstats, io
 
-    pr = cProfile.Profile()
+    pr = cProfile.Profile() 
     pr.enable()
     s = time.time()
     for i in test:

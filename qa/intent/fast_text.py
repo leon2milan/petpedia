@@ -10,7 +10,11 @@ from qa.tools import flatten
 from qa.tools.ahocorasick import Ahocorasick
 from qa.tools.mongo import Mongo
 
-INTENT_MAP = {'__lable__1': "pet_qa", "__lable__0": "chitchat"}
+INTENT_MAP = {
+    '__label__2': "sensetive",
+    '__lable__1': "pet_qa",
+    "__lable__0": "chitchat"
+}
 __all__ = ['Fasttext']
 
 
@@ -27,6 +31,7 @@ class Fasttext(object):
         self.specialize = Words(cfg).get_specializewords
         model = model if model and model is not None else 'intent'
         self.build_detector()
+        self.build_sensetive_detector()
         if model is None or not os.path.exists(
                 os.path.join(self.cfg.INTENT.MODEL_PATH,
                              '{}.bin'.format(model))):
@@ -35,6 +40,21 @@ class Fasttext(object):
             self.classifier = fasttext.load_model(
                 os.path.join(self.cfg.INTENT.MODEL_PATH,
                              '{}.bin'.format(model)))
+
+    def build_sensetive_detector(self):
+        sw = Words(self.cfg).get_sensitivewords
+        self.sen_detector = Ahocorasick()
+        for word in sw:
+            self.sen_detector.add_word(word)
+        self.sen_detector.make()
+
+    def sensetive_detect(self, query):
+        res = self.sen_detector.search_all(query)
+        flag = False
+        if len(res) > 0:
+            flag = True
+            res = [query[x[0]:x[1] + 1] for x in res]
+        return flag, res
 
     def build_detector(self):
         self.ah = Ahocorasick()
@@ -140,6 +160,9 @@ class Fasttext(object):
         # print("Number of examples:", result.nexamples)  #预测错的例子
 
     def predict(self, text):
+        flag, sen = self.sensetive_detect(text)
+        if flag:
+            return 'sensetive', 1.0
         res = self.ah.search(text)
         if res:
             return "pet_qa", 1.0
@@ -157,7 +180,7 @@ if __name__ == '__main__':
 
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
-        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种'
+        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种', '习大大', '犬细小病毒的症状'
     ]
 
     for x in text:

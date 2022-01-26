@@ -41,15 +41,13 @@ class ANN(metaclass=ABCMeta):
 class HNSW(ANN):
     __type = "hnsw"
     __slot__ = [
-        'cfg', 'is_rough', 'seg', 'stopwords', 'mongo', 'embedding',
+        'cfg', 'is_rough', 'mongo', 'embedding',
         'sent_func', 'hnsw', 'emb_size', 'id_map'
     ]
 
     def __init__(self, cfg, is_rough) -> None:
         self.cfg = cfg
         self.is_rough = is_rough
-        self.seg = Segmentation(cfg)
-        self.stopwords = Words(cfg).get_stopwords
         self.mongo = Mongo(self.cfg, self.cfg.BASE.QA_COLLECTION)
 
         logger.info('Loading Vector based retrieval model {} ....'.format(
@@ -220,13 +218,12 @@ class HNSW(ANN):
 if __name__ == "__main__":
     cfg = get_cfg()
     rough = HNSW(cfg, is_rough=True)
-    test = [['想', '养', '哈士奇', '应该', '注意'], ['想', '养', '狗', '应该', '注意'],
-            ['家', '猫', '半夜', '瞎', '叫唤', '咋办'], ['猫', '骨折', '了'],
-            ['我', '想', '养个', '哈士奇', '，', '应该', '注意', '什么', '？'],
+    test = [['我家', '猫', '半夜', '瞎', '叫唤', '咋办'], ['猫', '骨折', '了'],
+            ['我想', '养个', '哈士奇', '，', '应该', '注意什么', '？'],
             ['狗狗', '容易', '感染', '什么', '疾病'], ['哈士奇', '老', '拆家'],
-            [['犬细小'], ['哈士奇', '老', '拆', '家']], ['哈士奇', '拆家'],
-            ['我想', '养个', '猫', '应该', '注意'], ['我想', '养个', '哈士奇', '应该', '注意'],
-            ['我想', '养个', '狗', '应该', '注意']]
+            [['犬细小'], ['哈士奇', '老', '拆家']], ['哈士奇', '拆家'],
+            ['我想', '养个', '猫', '应该注意'], ['我想', '养个', '哈士奇', '应该注意'],
+            ['我想', '养个', '狗', '应该注意']]
     for x in test:
         s = time.time()
         print('query', x, 'rough', [[(x['docid'], x['score'], x['index'])

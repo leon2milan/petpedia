@@ -20,7 +20,7 @@ clean:
 	rm -rf build
 
 run:
-	bash ./start.sh
+	bash ./scripts/start.sh
 
 test:
-	python -m pytest -n auto --dist=loadfile -s -v ./tests/
+	python -m pytest -n auto --dist=loadfile -s -v ./tests/ --junitxml="tests.xml"

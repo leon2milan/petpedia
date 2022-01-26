@@ -1,0 +1,12 @@
+
+#!/usr/local/bin/expect -f
+
+set ipaddr "172.28.29.249"
+set passwd [exec echo "aHpuaWFueGkwOA==" | base64 -d
+spawn ssh jiangbingyu@$ipaddr
+expect {
+"yes/no" { send "yes\r"; exp_continue}
+"password:" { send  "$passwd\r"}
+}
+expect eof
+exit

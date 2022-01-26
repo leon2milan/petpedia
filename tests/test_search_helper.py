@@ -7,7 +7,6 @@ class SearchhelperTest(unittest.TestCase):
     def setUp(self):
         cfg = get_cfg()
         self.model_tester = SearchHelper(cfg)
-        self.text = ['习大大', '犬细小病毒的症状']
 
     def test_hotfreq(self):
         expect_output = [
@@ -16,10 +15,3 @@ class SearchhelperTest(unittest.TestCase):
         output = [x['doc']['question'] for x in self.model_tester.hot_query()]
         self.assertEqual(output, expect_output)
 
-    def test_sensetive(self):
-        expect_output = [(True, ['习大大']), (False, [])]
-        output = []
-        for x in self.text:
-            output.append(self.model_tester.sensetive_detect(x))
-
-        self.assertEqual(output, expect_output)
