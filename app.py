@@ -10,6 +10,7 @@ from qa.intent import Fasttext
 from qa.knowledge import EntityLink
 from qa.search import SearchHelper
 from qa.queryUnderstanding.queryReformat.queryCorrection.correct import SpellCorrection
+from qa.diagnose.inference import SelfDiagnose
 
 logger = setup_logger(name='APP')
 cfg = get_cfg()
@@ -21,6 +22,7 @@ helper = SearchHelper(cfg)
 sc = SpellCorrection(cfg)
 ss = SemanticSimilarity(cfg)
 seg = Segmentation(cfg)
+sd = SelfDiagnose(cfg)
 logger.info("Success load model!!!")
 
 app = Flask(__name__)
@@ -46,8 +48,12 @@ def retrieval():
 def entity():
     data = request.json
     query = data['query']
-    entity, type = el.entity_link(query)
-    return jsonify({"entity": entity, "type": type})
+    entity = el.entity_link(query)
+    return jsonify(
+        {"result": [{
+            'entity': x[0],
+            'type': x[1]
+        } for x in entity]})
 
 
 @app.route('/hot', methods=["POST"])
@@ -83,10 +89,14 @@ def term_weight():
     rough_query = seg.cut(query, is_rough=True)
     segmentation = rough_query[0]
     tw = ss.delete_diff(segmentation).tolist()
-    return jsonify({
-        "segmentation": segmentation,
-        'term_weight': tw
-    })
+    return jsonify({"segmentation": segmentation, 'term_weight': tw})
+
+
+@app.route('/self_diagnose', methods=["POST"])
+def diagnose():
+    data = request.json
+    result = sd.diagnose(data)
+    return jsonify({'result': result})
 
 
 if __name__ == '__main__':

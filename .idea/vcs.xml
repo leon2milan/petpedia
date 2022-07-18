@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/intent/chinese_chatbot_corpus" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/intent/raw_chat_corpus/egret-qa-useless" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/intent/raw_chat_corpus/ptt-77w/Gossiping-Chinese-Corpus" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/intent/raw_chat_corpus/sms-useless" vcs="Git" />
+  </component>
+</project>

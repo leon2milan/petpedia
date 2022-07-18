@@ -71,8 +71,8 @@ class Fasttext(object):
                 lambda a, b: dict(a, **b), self.specialize.values()).items()])
             qa = pd.DataFrame(
                 list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
-            qa['question_cut'] = qa['question'].progress_apply(
-                lambda x: self.seg.cut(x, mode='pos', is_rough=True))
+            qa['question_cut'] = qa['question'].apply(
+                lambda x: list(self.seg.cut(x, mode='pos', is_rough=True)))
             qa['question_cut'] = qa['question_cut'].apply(
                 lambda x: list(zip(x[0], x[1])))
             qa['question_cut'] = qa['question_cut'].apply(
@@ -180,7 +180,7 @@ if __name__ == '__main__':
 
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
-        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种', '习大大', '犬细小病毒的症状'
+        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种', '习大大', '犬细小病毒的症状', '牙菌斑'
     ]
 
     for x in text:

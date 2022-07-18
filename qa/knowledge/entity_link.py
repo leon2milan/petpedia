@@ -220,20 +220,15 @@ class EntityLink(object):
         return candiate_entity_list
 
     def entity_link(self, query):
+        order = {'DISEASE': 2, "SYMPTOMS":1, "DOG":0, 'CAT':0}
         # candidate = self.knowledge_hnsw.search(self.seg(query, is_rough=True))
         extracted = self.get_mentions(query)
         logger.debug(f"query: {query}, extracted: {extracted}")
         # candidate = [x if x['entity'] in extracted else x['score'] * 0.5 for x in candidate]
         # candidate = sorted(candidate, key=lambda x: x['score'])
-        disease = [x for x in extracted if self.word.is_disease(x[0])]
-        logger.debug(f"query: {query}, disease: {disease}")
-        if len(disease) > 0:
-            return disease[0]
-        symptom = [x for x in extracted if self.word.is_symptom(x[0])]
-        logger.debug(f"query: {query}, symptom: {symptom}")
-        if len(symptom) > 0:
-            return symptom[0]
-        return extracted[0] if extracted else ('', None)
+        
+        extracted = sorted(extracted, key=lambda x: order[x[1]], reverse=True)
+        return extracted
 
 
 if __name__ == '__main__':

@@ -27,8 +27,6 @@ pymongo
 gunicorn
 flask
 gevent
-paddlepaddle-gpu==2.2.1
-# ddparser too slow
 lightgbm
 neo4j
 python-Levenshtein
@@ -36,3 +34,5 @@ pytest
 pytest-xdist
 pytest-timeout
 toml
+pymc3
+# ddparser too slow

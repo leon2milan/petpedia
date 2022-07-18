@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.6 (petpedia)" project-jdk-type="Python SDK" />
+  <component name="UnattendedHostPersistenceState">
+    <option name="openedFilesInfos">
+      <list>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="337" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/requirements.txt" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="0" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/qa/diagnose/__init__.py" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="2608" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/app.py" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="171" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/scripts/start.sh" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="6731" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/qa/intent/fast_text.py" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="772" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/qa/search/search_helper.py" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="1311" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/qa/diagnose/inference.py" />
+        </OpenedFileInfo>
+      </list>
+    </option>
+  </component>
+</project>

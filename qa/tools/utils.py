@@ -2,7 +2,8 @@ import time
 import functools
 from qa.tools.logger import setup_logger
 import socket
-
+from itertools import chain
+from pypinyin import pinyin, Style
 logger = setup_logger()
 
 # class Singleton(type):
@@ -173,4 +174,17 @@ def show_memory(var, unit='MB', threshold=1):
     memory = eval("getsizeof({})".format(var)) // scale
     if memory >= threshold:
         print(memory, unit)
-            
+
+
+def to_pinyin(s):
+    '''转拼音
+
+    :param s: 字符串或列表
+    :type s: str or list
+    :return: 拼音字符串
+    >>> to_pinyin('你好吗')
+    'ni3hao3ma'
+    >>> to_pinyin(['你好', '吗'])
+    'ni3hao3ma'
+    '''
+    return ''.join(chain.from_iterable(pinyin(s, style=Style.FIRST_LETTER)))

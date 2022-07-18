@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite errors="0" failures="5" hostname="rp-hb2-ai-02" name="pytest" skipped="0" tests="11" time="68.690" timestamp="2022-06-15T09:33:01.898376"><testcase classname="tests.test_diagnose.EntitylinkTest" name="test_predict" time="2.819"><failure message="AssertionError: Lists differ: [['猫蛋白丢失性肾病', '猫肾上腺皮质机能亢进', '猫蛋白丢失性肠病', '猫糖尿病[151 chars]贫血']] != [['猫糖尿病', '猫肾上腺皮质机能亢进', '猫甲状腺机能亢进', '猫胰外分泌不足'[58 chars]肪肝']]&#10;&#10;First differing element 0:&#10;['猫蛋白丢失性肾病', '猫肾上腺皮质机能亢进', '猫蛋白丢失性肠病', '猫糖尿病', '猫肠道寄生虫病']&#10;['猫糖尿病', '猫肾上腺皮质机能亢进', '猫甲状腺机能亢进', '猫胰外分泌不足']&#10;&#10;- [['猫蛋白丢失性肾病', '猫肾上腺皮质机能亢进', '猫蛋白丢失性肠病', '猫糖尿病', '猫肠道寄生虫病'],&#10;-  ['猫脑膜炎', '猫脑水肿', '猫肠梗阻', '猫中枢神经系统肿瘤', '猫会厌肿瘤'],&#10;-  ['犬阴道炎', '犬子宫积液', '犬子宫内膜增生', '犬子宫蓄脓', '犬阴道肿瘤'],&#10;-  ['猫胆囊破裂', '猫胆结石', '猫肝硬化', '猫胆管肿瘤', '猫溶血性贫血']]&#10;+ [['猫糖尿病', '猫肾上腺皮质机能亢进', '猫甲状腺机能亢进', '猫胰外分泌不足'],&#10;+  ['猫中耳炎', '猫胃内异物', '猫甲状腺机能亢进', '猫鼻腔肿瘤'],&#10;+  ['犬子宫蓄脓'],&#10;+  ['猫脂肪肝']]">self = &lt;tests.test_diagnose.EntitylinkTest testMethod=test_predict&gt;
+
+    def test_predict(self):
+        expect_output = [['猫糖尿病', '猫肾上腺皮质机能亢进', '猫甲状腺机能亢进', '猫胰外分泌不足'],
+                         ['猫中耳炎', '猫胃内异物', '猫甲状腺机能亢进', '猫鼻腔肿瘤'], ['犬子宫蓄脓'],
+                         ['猫脂肪肝']]
+        output = []
+        for x in self.text:
+            output.append(
+                [m['disease'] for m in self.model_tester.diagnose(x)])
+&gt;       self.assertEqual(output, expect_output)
+E       AssertionError: Lists differ: [['猫蛋白丢失性肾病', '猫肾上腺皮质机能亢进', '猫蛋白丢失性肠病', '猫糖尿病[151 chars]贫血']] != [['猫糖尿病', '猫肾上腺皮质机能亢进', '猫甲状腺机能亢进', '猫胰外分泌不足'[58 chars]肪肝']]
+E       
+E       First differing element 0:
+E       ['猫蛋白丢失性肾病', '猫肾上腺皮质机能亢进', '猫蛋白丢失性肠病', '猫糖尿病', '猫肠道寄生虫病']
+E       ['猫糖尿病', '猫肾上腺皮质机能亢进', '猫甲状腺机能亢进', '猫胰外分泌不足']
+E       
+E       - [['猫蛋白丢失性肾病', '猫肾上腺皮质机能亢进', '猫蛋白丢失性肠病', '猫糖尿病', '猫肠道寄生虫病'],
+E       -  ['猫脑膜炎', '猫脑水肿', '猫肠梗阻', '猫中枢神经系统肿瘤', '猫会厌肿瘤'],
+E       -  ['犬阴道炎', '犬子宫积液', '犬子宫内膜增生', '犬子宫蓄脓', '犬阴道肿瘤'],
+E       -  ['猫胆囊破裂', '猫胆结石', '猫肝硬化', '猫胆管肿瘤', '猫溶血性贫血']]
+E       + [['猫糖尿病', '猫肾上腺皮质机能亢进', '猫甲状腺机能亢进', '猫胰外分泌不足'],
+E       +  ['猫中耳炎', '猫胃内异物', '猫甲状腺机能亢进', '猫鼻腔肿瘤'],
+E       +  ['犬子宫蓄脓'],
+E       +  ['猫脂肪肝']]
+
+tests/test_diagnose.py:33: AssertionError</failure></testcase><testcase classname="tests.test_content.CorrectTest" name="test_predict" time="4.911"><failure message="AssertionError: Lists differ: [{'SP[65 chars]PECIES': 'DOG', 'disease_name': '犬瘟热病毒感染'}, {'SPECIES': 'DOG'}] != [{'SP[65 chars]PECIES': 'DOG', 'disease_name': '犬瘟热'}, {'SPECIES': 'DOG'}]&#10;&#10;First differing element 2:&#10;{'SPECIES': 'DOG', 'disease_name': '犬瘟热病毒感染'}&#10;{'SPECIES': 'DOG', 'disease_name': '犬瘟热'}&#10;&#10;  [{'SPECIES': 'DOG'},&#10;   {'SPECIES': 'DOG', 'breed_name': '西伯利亚哈士奇犬'},&#10;-  {'SPECIES': 'DOG', 'disease_name': '犬瘟热病毒感染'},&#10;?                                         ----&#10;&#10;+  {'SPECIES': 'DOG', 'disease_name': '犬瘟热'},&#10;   {'SPECIES': 'DOG'}]">self = &lt;tests.test_content.CorrectTest testMethod=test_predict&gt;
+
+    def test_predict(self):
+        expect_output = [{
+            'SPECIES': 'DOG'
+        }, {
+            'SPECIES': 'DOG',
+            'breed_name': '西伯利亚哈士奇犬'
+        }, {
+            'SPECIES': 'DOG',
+            'disease_name': '犬瘟热'
+        }, {
+            'SPECIES': 'DOG'
+        }]
+        output = []
+        for x in self.text:
+            output.append({
+                k: v[0]
+                for k, v in self.model_tester.understanding(x).items() if v
+            })
+&gt;       self.assertEqual(output, expect_output)
+E       AssertionError: Lists differ: [{'SP[65 chars]PECIES': 'DOG', 'disease_name': '犬瘟热病毒感染'}, {'SPECIES': 'DOG'}] != [{'SP[65 chars]PECIES': 'DOG', 'disease_name': '犬瘟热'}, {'SPECIES': 'DOG'}]
+E       
+E       First differing element 2:
+E       {'SPECIES': 'DOG', 'disease_name': '犬瘟热病毒感染'}
+E       {'SPECIES': 'DOG', 'disease_name': '犬瘟热'}
+E       
+E         [{'SPECIES': 'DOG'},
+E          {'SPECIES': 'DOG', 'breed_name': '西伯利亚哈士奇犬'},
+E       -  {'SPECIES': 'DOG', 'disease_name': '犬瘟热病毒感染'},
+E       ?                                         ----
+E       
+E       +  {'SPECIES': 'DOG', 'disease_name': '犬瘟热'},
+E          {'SPECIES': 'DOG'}]
+
+tests/test_content.py:30: AssertionError</failure></testcase><testcase classname="tests.test_file.FileTest" name="test_predict" time="0.003"><failure message="AssertionError: Lists differ: [152357, 175212] != [126402, 271442]&#10;&#10;First differing element 0:&#10;152357&#10;126402&#10;&#10;- [152357, 175212]&#10;+ [126402, 271442]">self = &lt;tests.test_file.FileTest testMethod=test_predict&gt;
+
+    def test_predict(self):
+        expect_output = [126402, 271442]
+        output = []
+        for x in self.files:
+            output.append(Path(x).stat().st_size)
+&gt;       self.assertEqual(output, expect_output)
+E       AssertionError: Lists differ: [152357, 175212] != [126402, 271442]
+E       
+E       First differing element 0:
+E       152357
+E       126402
+E       
+E       - [152357, 175212]
+E       + [126402, 271442]
+
+tests/test_file.py:17: AssertionError</failure></testcase><testcase classname="tests.test_entity_link.EntitylinkTest" name="test_predict" time="4.960"><failure message="AssertionError: Lists differ: [[('异食癖', 'SYMPTOMS')], [('血尿', 'SYMPTOMS'[386 chars]G')]] != [('异食癖', 'SYMPTOMS'), ('血尿', 'SYMPTOMS'), [189 chars]SE')]&#10;&#10;First differing element 0:&#10;[('异食癖', 'SYMPTOMS')]&#10;('异食癖', 'SYMPTOMS')&#10;&#10;Diff is 941 characters long. Set self.maxDiff to None to see it.">self = &lt;tests.test_entity_link.EntitylinkTest testMethod=test_predict&gt;
+
+    def test_predict(self):
+        expect_output = [('异食癖', 'SYMPTOMS'), ('血尿', 'SYMPTOMS'),
+                         ('腹泻', 'SYMPTOMS'), ('西伯利亚哈士奇犬', 'DOG'),
+                         ('厌食', 'SYMPTOMS'), ('拉布拉多寻回猎犬', 'DOG'),
+                         ('厌食', 'SYMPTOMS'), ('阿提桑诺曼底短腿犬', 'DOG'),
+                         ('阿尔卑斯达切斯勃拉克犬', 'DOG'), ('骨折（犬）', 'DISEASE'),
+                         ('支气管肺炎（犬）', 'DISEASE')]
+        output = []
+        for x in self.text:
+            output.append(self.model_tester.entity_link(x))
+&gt;       self.assertEqual(output, expect_output)
+E       AssertionError: Lists differ: [[('异食癖', 'SYMPTOMS')], [('血尿', 'SYMPTOMS'[386 chars]G')]] != [('异食癖', 'SYMPTOMS'), ('血尿', 'SYMPTOMS'), [189 chars]SE')]
+E       
+E       First differing element 0:
+E       [('异食癖', 'SYMPTOMS')]
+E       ('异食癖', 'SYMPTOMS')
+E       
+E       Diff is 941 characters long. Set self.maxDiff to None to see it.
+
+tests/test_entity_link.py:26: AssertionError</failure></testcase><testcase classname="tests.test_models.ModelTest" name="test_predict" time="0.011" /><testcase classname="tests.test_intent.FasttextTest" name="test_predict" time="8.176" /><testcase classname="tests.test_search_helper.SearchhelperTest" name="test_hotfreq" time="1.240" /><testcase classname="tests.test_es.ModelTest" name="test_predict" time="4.603" /><testcase classname="tests.test_mongo.ModelTest" name="test_predict" time="6.974" /><testcase classname="tests.test_search.SearchTest" name="test_predict" time="27.063"><failure message="AssertionError: Lists differ: ['泰迪最[21 chars] '犬瘟热尿血', '狗肠炎发烧吗', '金毛九色', '拉布拉多呕吐不吃东西', '犬细小[38 chars]小技巧'] != ['泰迪最[21 chars] '犬瘟热转阴', '狗肠炎发烧吗', '金毛九色', '拉布拉多呕吐不吃东西', '犬细小[34 chars]意事项']&#10;&#10;First differing element 2:&#10;'犬瘟热尿血'&#10;'犬瘟热转阴'&#10;&#10;  ['泰迪最容易感染什么疾病呢',&#10;   '哈士奇拆家吗',&#10;-  '犬瘟热尿血',&#10;?      ^^&#10;&#10;+  '犬瘟热转阴',&#10;?      ^^&#10;&#10;   '狗肠炎发烧吗',&#10;   '金毛九色',&#10;   '拉布拉多呕吐不吃东西',&#10;   '犬细小病毒症状',&#10;   '犬细小症状',&#10;   [],&#10;-  '英国猎狐犬怎么美容 英国猎狐犬美容小技巧']&#10;+  '可蒙犬怎么养 可蒙犬饲养注意事项']">self = &lt;tests.test_search.SearchTest testMethod=test_predict&gt;
+
+    def test_predict(self):
+        expect_output = [
+            '泰迪最容易感染什么疾病呢', '哈士奇拆家吗', '犬瘟热转阴', '狗肠炎发烧吗', '金毛九色',
+            '拉布拉多呕吐不吃东西', '犬细小病毒症状', '犬细小症状', [], '可蒙犬怎么养 可蒙犬饲养注意事项'
+        ]
+        output = []
+        for x in self.text:
+            res = self.model_tester.search(x)
+            if len(res) &gt; 0:
+                output.append([(x['doc']['question']) for x in res][0])
+            else:
+                output.append([])
+        logger.info(output)
+&gt;       self.assertEqual(output, expect_output)
+E       AssertionError: Lists differ: ['泰迪最[21 chars] '犬瘟热尿血', '狗肠炎发烧吗', '金毛九色', '拉布拉多呕吐不吃东西', '犬细小[38 chars]小技巧'] != ['泰迪最[21 chars] '犬瘟热转阴', '狗肠炎发烧吗', '金毛九色', '拉布拉多呕吐不吃东西', '犬细小[34 chars]意事项']
+E       
+E       First differing element 2:
+E       '犬瘟热尿血'
+E       '犬瘟热转阴'
+E       
+E         ['泰迪最容易感染什么疾病呢',
+E          '哈士奇拆家吗',
+E       -  '犬瘟热尿血',
+E       ?      ^^
+E       
+E       +  '犬瘟热转阴',
+E       ?      ^^
+E       
+E          '狗肠炎发烧吗',
+E          '金毛九色',
+E          '拉布拉多呕吐不吃东西',
+E          '犬细小病毒症状',
+E          '犬细小症状',
+E          [],
+E       -  '英国猎狐犬怎么美容 英国猎狐犬美容小技巧']
+E       +  '可蒙犬怎么养 可蒙犬饲养注意事项']
+
+tests/test_search.py:31: AssertionError</failure></testcase><testcase classname="tests.test_correct.CorrectTest" name="test_predict" time="48.859" /></testsuite></testsuites>
