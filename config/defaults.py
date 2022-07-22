@@ -5,7 +5,7 @@ from qa.tools.utils import get_host_ip
 
 ip = get_host_ip()
 env = 'product'
-if ip == '10.2.0.55':
+if ip == '172.28.37.195':
     env = 'test'
 
 _C = CN()
@@ -39,7 +39,6 @@ _C.BASE.DOG_DATA = os.path.join(ROOT, 'data/knowledge_graph/chien_name.csv')
 _C.BASE.DISEASE_DATA = os.path.join(ROOT, 'data/knowledge_graph/disease.txt')
 _C.BASE.SYMPTOM_DATA = os.path.join(ROOT, 'data/knowledge_graph/symptom.csv')
 
-_C.BASE.FROM_FILE = True if env == 'test' else False
 _C.BASE.DATA_PATH = os.path.join(ROOT, 'data/')
 _C.BASE.CHAR_FILE = os.path.join(ROOT, 'data/segmentation/all_char.txt')
 _C.BASE.FINE_WORD_FILE = os.path.join(ROOT,

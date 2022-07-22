@@ -78,7 +78,16 @@ class Mongo():
             logger.error("mongo service is down. Please check.")
             raise _MongoClientErrorHandler
 
+    def show_dbs(self):
+        dbs = self.conn.database_names()   # pymongo获取mongodb实例下所有数据库名称
+        return dbs
+    
+    def show_collections(self):
+        result = self.db.list_collection_names(session=None)    #  pymongo获取指定数据库的集合名称
+        return result
 
 if __name__ == "__main__":
     cfg = get_cfg()
-    mongo = Mongo(cfg)
+    mongo = Mongo(cfg, 'qa')
+    print(mongo.show_dbs())
+    print(mongo.show_collections())

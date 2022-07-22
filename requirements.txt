@@ -1,9 +1,7 @@
-Cython
 transformers
 fasttext
 dateutils
 cn2an
-torch
 joblib
 cyac
 opencc
@@ -18,10 +16,9 @@ sklearn
 gensim==3.8.1
 beautifulsoup4
 pypinyin
-elasticsearch
+elasticsearch==7.15.2
 pycedar
 pycorrector
-kenlm
 lmdb-embeddings
 pymongo
 gunicorn
