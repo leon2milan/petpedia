@@ -23,8 +23,8 @@ class EntitylinkTest(unittest.TestCase):
                          ('厌食', 'SYMPTOMS'), ('苏格兰折耳猫', 'CAT'), 
                          ('阿提桑诺曼底短腿犬', 'DOG'),
                          ('阿尔卑斯达切斯勃拉克犬', 'DOG'), 
-                         ('猫骨折', 'DISEASE'), ('犬骨折', 'DISEASE'), 
-                         ('猫支气管肺炎', 'DISEASE'), ('犬支气管肺炎', 'DISEASE'), ('猫支气管扩张', 'DISEASE'), ('咳嗽', 'SYMPTOMS'), ('金毛寻回猎犬', 'DOG')]
+                         ('犬骨折', 'DISEASE'), ('猫骨折', 'DISEASE'), 
+                         ('犬支气管肺炎', 'DISEASE'), ('猫支气管肺炎', 'DISEASE'), ('猫支气管扩张', 'DISEASE'), ('咳嗽', 'SYMPTOMS'), ('金毛寻回猎犬', 'DOG')]
         output = []
         for x in self.text:
             output.extend(self.model_tester.entity_link(x))
