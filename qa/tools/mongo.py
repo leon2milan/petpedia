@@ -95,4 +95,4 @@ if __name__ == "__main__":
     print(mongo.show_dbs())
     print(mongo.show_collections())
     print(mongo.get_col_stats('qa'))
-    print(list(mongo.find('qa', {"index": {"$gt": 204442}})))
+    # print(list(mongo.find('qa', {"index": {"$gt": 204442}})))
