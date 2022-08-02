@@ -27,7 +27,7 @@ except:
 
     db = conn['qa']
     need_transite = [cfg.BASE.SPECIALIZE_COLLECTION, cfg.BASE.SENSETIVE_COLLECTION,
-                    cfg.BASE.TSC_COLLECTION, cfg.BASE.QUERY_DURING_GUIDE]
+                    cfg.BASE.TSC_COLLECTION, cfg.BASE.QUERY_DURING_GUIDE, 'diseaseReason']
     for nt in need_transite:
         data = pd.DataFrame(list(db[nt].find({})))
         print('data', data)

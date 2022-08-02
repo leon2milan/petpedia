@@ -280,7 +280,7 @@ class SelfDiagnose:
 
     def init_weight(self):
         count = pd.read_excel(
-            '/workspaces/ai-petpedia/data/diagose/disease_count.xlsx',
+            os.path.join(ROOT, 'data/diagose/disease_count.xlsx'),
             engine='openpyxl',
             sheet_name='Sheet1')[['disease', 'count']].fillna(1.0)
         count['label'] = count['disease'].map(self.dis_dict).astype(int)

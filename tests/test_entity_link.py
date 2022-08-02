@@ -18,7 +18,6 @@ class EntitylinkTest(unittest.TestCase):
                          ('腹泻', 'SYMPTOMS'), 
                          ('西伯利亚哈士奇犬', 'DOG'),
                          ('厌食', 'SYMPTOMS'), ('英国短毛猫', 'CAT'), 
-                         ('金毛寻回猎犬', 'DOG'), ('拉布拉多寻回猎犬', 'DOG'),
                          ('厌食', 'SYMPTOMS'), ('苏格兰折耳猫', 'CAT'), 
                          ('阿提桑诺曼底短腿犬', 'DOG'),
                          ('阿尔卑斯达切斯勃拉克犬', 'DOG'), ]
