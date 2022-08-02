@@ -9,8 +9,7 @@ class EntitylinkTest(unittest.TestCase):
         self.model_tester = EntityLink(cfg)
         self.text = [
             "狗乱吃东西怎么办", "边牧偶尔尿血怎么办", "猫咪经常拉肚子怎么办", "哈士奇拆家怎么办", "英短不吃东西怎么办？",
-            "拉布拉多和金毛谁聪明", "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬", "阿尔卑斯达切斯勃拉克犬",
-            "狗狗骨折了怎么办", '金毛一直咳嗽检查说是支气管肺炎及支气管扩张怎么治'
+            "折耳怀孕不吃东西怎么办？", "阿提桑诺曼底短腿犬", "阿尔卑斯达切斯勃拉克犬",
         ]
 
     def test_predict(self):
@@ -22,9 +21,7 @@ class EntitylinkTest(unittest.TestCase):
                          ('金毛寻回猎犬', 'DOG'), ('拉布拉多寻回猎犬', 'DOG'),
                          ('厌食', 'SYMPTOMS'), ('苏格兰折耳猫', 'CAT'), 
                          ('阿提桑诺曼底短腿犬', 'DOG'),
-                         ('阿尔卑斯达切斯勃拉克犬', 'DOG'), 
-                         ('犬骨折', 'DISEASE'), ('猫骨折', 'DISEASE'), 
-                         ('犬支气管肺炎', 'DISEASE'), ('猫支气管肺炎', 'DISEASE'), ('猫支气管扩张', 'DISEASE'), ('咳嗽', 'SYMPTOMS'), ('金毛寻回猎犬', 'DOG')]
+                         ('阿尔卑斯达切斯勃拉克犬', 'DOG'), ]
         output = []
         for x in self.text:
             output.extend(self.model_tester.entity_link(x))

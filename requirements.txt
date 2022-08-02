@@ -20,7 +20,7 @@ elasticsearch==7.15.2
 pycedar
 pycorrector
 lmdb-embeddings
-pymongo
+pymongo==3.12.1
 gunicorn
 flask
 gevent
