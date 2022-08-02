@@ -17,7 +17,7 @@ class CorrectTest(unittest.TestCase):
             'breed_name': '西伯利亚哈士奇犬'
         }, {
             'SPECIES': 'DOG',
-            'disease_name': '犬瘟热'
+            'disease_name': '犬瘟热病毒感染'
         }, {
             'SPECIES': 'DOG'
         }]

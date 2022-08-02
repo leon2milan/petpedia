@@ -59,7 +59,21 @@ class HNSW(ANN):
         self.emb_size = self.cfg.REPRESENTATION.WORD2VEC.EMBEDDING_SIZE if 'BERT' not in self.cfg.RETRIEVAL.HNSW.SENT_EMB_METHOD else self.cfg.REPRESENTATION.BERT.EMBEDDING_SIZE
 
         self.hnsw = self.load(is_rough=self.is_rough)
+        if self.is_need_incremental_learning():
+            self.incremental_train(is_rough=self.is_rough)
+
         self.id_map = self.get_id_mapping()
+
+    def get_data_count(self):
+        return self.hnsw.get_current_count()
+
+    def is_need_incremental_learning(self):
+        if self.mongo.get_col_stats(
+            'qa')['executionStats']['totalDocsExamined'] != self.get_data_count():
+            flag = True
+        else:
+            flag = False
+        return flag
 
     def get_id_mapping(self):
         qa = pd.DataFrame(
@@ -115,7 +129,22 @@ class HNSW(ANN):
         pickle.dump(p, open(to_file, 'wb'))
         return p
 
-    def data_load(self, is_rough=False):
+    def increamental_train(self, is_rough=False):
+        path = self.cfg.RETRIEVAL.HNSW.ROUGH_HNSW_PATH if is_rough else self.cfg.RETRIEVAL.HNSW.FINE_HNSW_PATH
+
+        origin_cnt = self.get_data_count()
+
+        query = {"index": {"$gt": origin_cnt}}
+        data = self.data_load(is_rough, query)
+        self.hnsw.add_items(np.stack(data['embedding'].values).reshape(-1, self.emb_size),
+                            data['index'].values)
+
+        test_vec = self.sent_func(['哈士奇', '拆家'])
+        labels, distances = self.hnsw.knn_query(test_vec, k=10)
+        pickle.dump(self.hnsw, open(path, 'wb'))
+        logger.info(f"Incremental training is Done!!!")
+
+    def data_load(self, is_rough=False, query=None):
         '''
         @description: 读取数据， 并生成句向量
         @param {type}
@@ -123,8 +152,12 @@ class HNSW(ANN):
         @return: 包含句向量的dataframe
         '''
         logger.info('Loading training data ....')
-        data = pd.DataFrame(
-            list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
+        if query is not None:
+            data = pd.DataFrame(
+                list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
+        else:
+            data = pd.DataFrame(
+                list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
 
         col = 'question_rough_cut' if is_rough else 'question_fine_cut'
         data['embedding'] = data[col].progress_apply(
@@ -142,8 +175,6 @@ class HNSW(ANN):
         @return: hnsw 模型
         '''
         logger.info('Loading hnsw model...')
-        # hnsw = hnswlib.Index(space=self.cfg.RETRIEVAL.HNSW.SPACE, dim=self.emb_size)
-        # hnsw.load_index(model_path, max_elements=num_elements)
         hnsw = pickle.load(open(model_path, 'rb'))
         return hnsw
 
@@ -218,6 +249,7 @@ class HNSW(ANN):
 if __name__ == "__main__":
     cfg = get_cfg()
     rough = HNSW(cfg, is_rough=True)
+    print('count', rough.get_data_count())
     test = [['我家', '猫', '半夜', '瞎', '叫唤', '咋办'], ['猫', '骨折', '了'],
             ['我想', '养个', '哈士奇', '，', '应该', '注意什么', '？'],
             ['狗狗', '容易', '感染', '什么', '疾病'], ['哈士奇', '老', '拆家'],

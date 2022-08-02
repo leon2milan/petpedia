@@ -5,7 +5,7 @@ from qa.tools.utils import get_host_ip
 
 ip = get_host_ip()
 env = 'product'
-if ip == '172.28.37.195':
+if ip == '172.28.29.245':
     env = 'test'
 
 _C = CN()

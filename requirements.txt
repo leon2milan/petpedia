@@ -32,4 +32,5 @@ pytest-xdist
 pytest-timeout
 toml
 pymc3
+openpyxl
 # ddparser too slow

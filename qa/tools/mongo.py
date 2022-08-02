@@ -86,8 +86,13 @@ class Mongo():
         result = self.db.list_collection_names(session=None)    #  pymongo获取指定数据库的集合名称
         return result
 
+    def get_col_stats(self, collections):
+        return self.db[collections].find().explain()
+
 if __name__ == "__main__":
     cfg = get_cfg()
     mongo = Mongo(cfg, 'qa')
     print(mongo.show_dbs())
     print(mongo.show_collections())
+    print(mongo.get_col_stats('qa'))
+    print(list(mongo.find('qa', {"index": {"$gt": 204442}})))

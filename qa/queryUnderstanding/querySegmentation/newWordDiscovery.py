@@ -321,29 +321,26 @@ if __name__ == '__main__':
 
     specialize = Words(cfg).get_specializewords
     stopwords = Words(cfg).get_stopwords
-    qa = pd.read_table(cfg.BASE.CHAR_FILE, header=None, names=['content'])
+    qa = pd.read_table(cfg.BASE.CHAR_FILE, header=None, names=['content']).dropna()
     qa['content'] = qa['content'].apply(
         lambda x: "".join(x.split())).drop_duplicates()
     qa = qa['content'].drop_duplicates().values.tolist()
+    data_size = len(qa)
+    partition = 300000
+    segment = data_size // partition
+    print('Data {} will seperate for {} part'.format(str(data_size), str(segment)))
 
-    # word = pd.DataFrame(find_word("\n".join(map(str, qa[:600000]))),
-    #                     columns=[
-    #                         'word', 'term freq', 'aggregation coefficien',
-    #                         'left entropy', 'right entropy'])
-    # word.to_csv(os.path.join(cfg.BASE.DATA_PATH, 'dictionary/segmentation/new_word_1.csv'), index=False)
-    # etime = time.time()
-    # print("ALL DONE! 耗时 {} s".format(etime - stime))
-
-    word = pd.DataFrame(find_word("\n".join(map(str, qa[600000:]))),
-                        columns=[
-                            'word', 'term freq', 'aggregation coefficien',
-                            'left entropy', 'right entropy'
-                        ])
-    word.to_csv(os.path.join(cfg.BASE.DATA_PATH,
-                             'dictionary/segmentation/new_word_2.csv'),
-                index=False)
-    etime = time.time()
-    print("ALL DONE! 耗时 {} s".format(etime - stime))
+    # for i in range(segment):
+    #     word = pd.DataFrame(find_word("\n".join(map(str, qa[i * partition: (i + 1) * partition]))),
+    #                         columns=[
+    #                             'word', 'term freq', 'aggregation coefficien',
+    #                             'left entropy', 'right entropy'])
+    #     word.to_csv(os.path.join(cfg.BASE.DATA_PATH, 'dictionary/segmentation/new_word_{}.csv'.format(str(i))), index=False)
+    #     import gc
+    #     del word
+    #     gc.collect()
+    #     etime = time.time()
+    #     print("{}th Part is DONE! 耗时 {} s".format(str(i), etime - stime))
 
     import math
     import copy
@@ -357,32 +354,32 @@ if __name__ == '__main__':
             er / math.fabs(el - er))
         return pmi + lh
 
-    new1 = pd.read_csv(
+    data = []
+    for i in range(segment):
+        data.append(pd.read_csv(
         os.path.join(cfg.BASE.DATA_PATH,
-                     'dictionary/segmentation/new_word_1.csv'))
-    new2 = pd.read_csv(
-        os.path.join(cfg.BASE.DATA_PATH,
-                     'dictionary/segmentation/new_word_2.csv'))
-    new = pd.concat([new1, new2])
+                     'dictionary/segmentation/new_word_{}.csv').format(str(i))))
+
+    new = pd.concat(data)
     if os.path.exists(cfg.DICTIONARY.CUSTOM_WORDS):
         old = pd.read_csv(os.path.join(cfg.DICTIONARY.CUSTOM_WORDS))
         new = pd.concat([new, old]).drop_duplicates().reset_index(drop=True)
-    word = copy.deepcopy(new)
-
+    word = copy.deepcopy(new).dropna()
+    print('word', word.shape, new.shape)
     from functools import reduce
     entity_word = flatten([[k, v]
                            for k, v in reduce(lambda a, b: dict(a, **b),
                                               specialize.values()).items()])
 
-    word['word'] = word['word'].progress_apply(
+    word['word'] = word['word'].apply(
         lambda x: trans2simple(x)).dropna()
-    word['word'] = word['word'].progress_apply(
+    word['word'] = word['word'].apply(
         lambda x: re.sub('\（.*\）', '', x))
     word = word.drop_duplicates().dropna()
-    word['cut'] = word['word'].progress_apply(
+    word['cut'] = word['word'].apply(
         lambda x: list(seg.cut(x, mode='pos')))
-    word['len'] = word['cut'].progress_apply(lambda x: len(x[0]))
-    word['stopwords'] = word['cut'].progress_apply(
+    word['len'] = word['cut'].apply(lambda x: len(x[0]))
+    word['stopwords'] = word['cut'].apply(
         lambda x: "".join([y for y in x[0] if y in stopwords]))
 
     word = word[word['stopwords'] == '']

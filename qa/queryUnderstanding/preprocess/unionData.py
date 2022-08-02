@@ -1,10 +1,11 @@
 import os
 import pandas as pd
 from qa.tools.mongo import Mongo
-from qa.queryUnderstanding.preprocess import clean
+from qa.queryUnderstanding.preprocess import clean, normal_cut_sentence
 from config import get_cfg, ROOT
 from tqdm import tqdm
 from pymongo import MongoClient
+from qa.tools import flatten
 
 
 tqdm.pandas(desc="Data Process")
@@ -41,54 +42,11 @@ seg = Segmentation(cfg)
 stopwords = Words(cfg).get_stopwords
 
 if not os.path.exists(cfg.BASE.QA_DATA):
-    filtered = pd.read_csv(os.path.join(ROOT, 'data/knowledge_graph/filtered_qa.csv'))
-    own = pd.read_csv(os.path.join(ROOT, 'data/knowledge_graph/final_qa.csv'))
-    own = own.drop('question', axis=1).join(own.question.str.split('|', expand=True).stack().reset_index(drop=True, level=1).rename('question'))
-
-    qa = pd.concat([filtered[['question', 'answer']], own[['question', 'answer']]]).dropna().drop_duplicates().reset_index(drop=True)
+    qa = pd.read_csv(os.path.join(ROOT, 'data/knowledge_graph/qa_no_problem_data.csv'))
     print('qa size:', qa.shape)
     qa.to_csv(cfg.BASE.QA_DATA, index=False)
 else:
     qa = pd.read_csv(cfg.BASE.QA_DATA)[['question', 'answer']].dropna().drop_duplicates().reset_index(drop=True)
-
-qa = qa[qa['answer'] != '']
-
-qa[~qa['question'].isin([
-    '金毛chd症状', '狗总是便秘怎么解决', '银狐犬跟日本尖嘴有什么区别吗', '泡狗粮应该用温水还是开水【图】',
-    '怎样训练狗狗捡东西送回【图】', '养狗你需要注意哪些【图】'
-])]
-
-qa['question'] = qa['question'].apply(lambda x: x.strip(
-    '[\s+\.\!\/_,$%^*(+\"\')]+|[+——()?【】“”！，。？、~@#￥%……&*（）]+').replace(
-        '【图】', ''))
-
-qa['answer'] = qa['answer'].apply(lambda x: x.split('标签：')[0])
-qa['answer'] = qa['answer'].apply(lambda x: x.split('友情提示：')[0])
-qa['answer'] = qa['answer'].apply(lambda x: x.split('文章来自：')[0])
-qa['answer'] = qa['answer'].apply(lambda x: x.split('友情链接：')[0])
-qa['answer'] = qa['answer'].apply(lambda x: x.split('购买宠物，请复制客服微信号')[0])
-qa['answer'] = qa['answer'].apply(lambda x: x.split('建议咨询在线兽医')[0])
-qa['answer'] = qa['answer'].apply(lambda x: x.split('温馨提示：')[0])
-qa['answer'] = qa['answer'].apply(
-    lambda x: x.replace('导读：', '').replace('导读', ''))
-qa = qa[~qa['answer'].str.contains('派多格')]
-qa = qa[~qa['answer'].str.contains('美容学校')]
-qa = qa[~qa['answer'].str.contains('微信')]
-qa = qa[~qa['answer'].str.contains('公众号')]
-qa = qa[~((qa['answer'].str.startswith('2.')) |
-            (qa['answer'].str.startswith('2、')) |
-            (qa['answer'].str.startswith('3.')) |
-            (qa['answer'].str.startswith('第二')) |
-            (qa['answer'].str.startswith('二、')) |
-            (qa['answer'].str.startswith('三、')))]
-qa = qa[~(qa['question'].str.contains('中新网：') |
-            (qa['question'].str.contains('中网资讯：')) |
-            (qa['question'].str.contains('中国日报网：') |
-            (qa['question'].str.contains('眉山网：')) |
-            (qa['question'].str.contains('大众网报道：')) |
-            (qa['question'].str.contains('培训学校')) |
-            (qa['question'].str.contains('投稿指南')) |
-            (qa['question'].str.contains('派多格'))))]
 
 qa['question_fine_cut'] = qa['question'].progress_apply(
     lambda x:
@@ -124,3 +82,41 @@ mongo.insert_many(cfg.BASE.QA_COLLECTION, qa.fillna('').to_dict('record'))
 
 qa = pd.DataFrame(list(mongo.find(cfg.BASE.QA_COLLECTION, {})))
 es.insert_mongo('qa_v1', qa)
+
+
+qa['answer_fine_cut'] = qa['answer'].progress_apply(
+    lambda x: [[x for x in line if x not in stopwords] for line in
+        [seg.cut(clean(y), is_rough=False) for y in normal_cut_sentence(x)]])
+qa['answer_rough_cut'] = qa['answer'].progress_apply(
+    lambda x: [[x for x in line if x not in stopwords] for line in
+        [seg.cut(clean(y), is_rough=True) for y in normal_cut_sentence(x)]])
+
+data =  qa['answer'].dropna().drop_duplicates().progress_apply(lambda x: normal_cut_sentence(x)).tolist() + \
+        qa['question'].unique().tolist()
+data = flatten(data)
+
+with open(cfg.BASE.CHAR_FILE, 'w') as f:
+    for x in data:
+        if x:
+            f.write(" ".join(x))
+            f.write('\n')
+
+data = qa['question_fine_cut'].values.tolist() + [
+    y for x in qa['answer_fine_cut'].values.tolist() for y in x if y
+]
+data = list(set([" ".join(x) for x in data if x]))
+with open(cfg.BASE.FINE_WORD_FILE, 'w') as f:
+    for x in tqdm(data):
+        if x:
+            f.write(x)
+            f.write('\n')
+
+data = qa['question_rough_cut'].values.tolist() + [
+    y for x in qa['answer_rough_cut'].values.tolist() for y in x if y
+]
+data = list(set([" ".join(x) for x in data if x]))
+with open(cfg.BASE.ROUGH_WORD_FILE, 'w') as f:
+    for x in tqdm(data):
+        if x:
+            f.write(x)
+            f.write('\n')
