@@ -60,7 +60,8 @@ class HNSW(ANN):
 
         self.hnsw = self.load(is_rough=self.is_rough)
         if self.is_need_incremental_learning():
-            self.incremental_train(is_rough=self.is_rough)
+            # self.incremental_train(is_rough=self.is_rough)
+            pass
 
         self.id_map = self.get_id_mapping()
 
@@ -136,6 +137,7 @@ class HNSW(ANN):
 
         query = {"index": {"$gt": origin_cnt}}
         data = self.data_load(is_rough, query)
+        print('data', data.shape)
         self.hnsw.add_items(np.stack(data['embedding'].values).reshape(-1, self.emb_size),
                             data['index'].values)
 

@@ -3,10 +3,11 @@ import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
-from config import get_cfg
+from config import get_cfg, ROOT
 from qa.tools.mongo import Mongo
 import copy
 from qa.tools.utils import to_pinyin
+import os
 
 
 def softmax(x):
@@ -24,7 +25,7 @@ class SelfDiagnose:
 
     def init(self):
         relation = pd.read_excel(
-            '/workspaces/ai-petpedia/data/diagose/sym-disease.xlsx',
+            os.path.join(ROOT, 'data/diagose/sym-disease.xlsx'),
             engine='openpyxl',
             sheet_name='Sheet1')[['disease', 'symptom', 'weight']]
         tag = pd.DataFrame(list(self.mongo.find('diseaseReason', {})))

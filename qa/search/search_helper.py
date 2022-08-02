@@ -17,7 +17,7 @@ class SearchHelper:
         res = self.mongo.find(
             self.cfg.BASE.QA_COLLECTION,
             {'index': {
-                "$in": [192918, 195055, 196905, 9164, 49756]
+                "$in": [47040, 49111, 49706, 1344, 47131]
             }})
         res = [{
             'doc': {
