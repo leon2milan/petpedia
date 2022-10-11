@@ -5,6 +5,7 @@ from functools import reduce
 import fasttext
 import pandas as pd
 from config import get_cfg
+from qa.queryUnderstanding.preprocess.preprocess import nonsence_detect
 from qa.queryUnderstanding.querySegmentation import Segmentation, Words
 from qa.tools import flatten
 from qa.tools.ahocorasick import Ahocorasick
@@ -18,6 +19,7 @@ INTENT_MAP = {
 __all__ = ['Fasttext']
 
 
+# The class takes in a text, and returns the intent and the probability of the text
 class Fasttext(object):
     __slot__ = [
         'cfg', 'mongo', 'seg', 'stopwords', 'specialize', 'classifier', 'ah'
@@ -32,16 +34,16 @@ class Fasttext(object):
         model = model if model and model is not None else 'intent'
         self.build_detector()
         self.build_sensetive_detector()
-        if model is None or not os.path.exists(
-                os.path.join(self.cfg.INTENT.MODEL_PATH,
-                             '{}.bin'.format(model))):
+        if model is None or not os.path.exists(os.path.join(self.cfg.INTENT.MODEL_PATH, f'{model}.bin')):
             self.train(model)
         else:
-            self.classifier = fasttext.load_model(
-                os.path.join(self.cfg.INTENT.MODEL_PATH,
-                             '{}.bin'.format(model)))
+            self.classifier = fasttext.load_model(os.path.join(self.cfg.INTENT.MODEL_PATH, f'{model}.bin'))
 
     def build_sensetive_detector(self):
+        """
+        It takes a list of words, and builds a tree structure that allows you to search for all of those
+        words in a string in O(n) time
+        """
         sw = Words(self.cfg).get_sensitivewords
         self.sen_detector = Ahocorasick()
         for word in sw:
@@ -49,6 +51,14 @@ class Fasttext(object):
         self.sen_detector.make()
 
     def sensetive_detect(self, query):
+        """
+        It takes a string as input, and returns a tuple of two elements: a boolean value and a list of
+        strings
+        
+        :param query: the query string
+        :return: A tuple of two elements. The first element is a boolean value indicating whether the
+        query contains sensitive words. The second element is a list of sensitive words.
+        """
         res = self.sen_detector.search_all(query)
         flag = False
         if len(res) > 0:
@@ -57,42 +67,51 @@ class Fasttext(object):
         return flag, res
 
     def build_detector(self):
+        """
+        1. If the file `detector.txt` exists, read it into a list `qa`; otherwise, read the data from
+        the database, and then do some preprocessing to get the list `qa`，
+        2. Then to build a Ahocorasick
+        """
         self.ah = Ahocorasick()
-        if os.path.exists(
-                os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')):
-            qa = [
-                x.strip() for x in open(
-                    os.path.join(self.cfg.INTENT.MODEL_PATH,
-                                 'detector.txt')).readlines()
-            ]
+        if os.path.exists(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')):
+            qa = [x.strip() for x in open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')).readlines()]
 
         else:
-            entity_word = flatten([[k, v] for k, v in reduce(
-                lambda a, b: dict(a, **b), self.specialize.values()).items()])
-            qa = pd.DataFrame(
-                list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
-            qa['question_cut'] = qa['question'].apply(
-                lambda x: list(self.seg.cut(x, mode='pos', is_rough=True)))
-            qa['question_cut'] = qa['question_cut'].apply(
-                lambda x: list(zip(x[0], x[1])))
-            qa['question_cut'] = qa['question_cut'].apply(
-                lambda x:
-                [i[0] for i in x if i[1] in ['n', 'nz', 'v', 'vn', 'nw']])
-
-            qa = flatten(qa['question_cut'].apply(
-                lambda x: [y for y in x if y not in self.stopwords]).tolist())
-            qa = [x for x in list(set(qa)) if len(x) > 1]
-            qa = qa + entity_word
-            with open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt'),
-                      'w') as f:
-                for i in qa:
-                    f.write(i + '\n')
-
+            qa = self._extracted_from_build_detector_13()
         for word in qa:
             self.ah.add_word(word)
         self.ah.make()
 
+    # TODO Rename this here and in `build_detector`
+    def _extracted_from_build_detector_13(self):
+        entity_word = flatten([[k, v] for k, v in reduce(lambda a, b: dict(a, **b), self.specialize.values()).items()])
+
+        result = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
+        result['question_cut'] = result['question'].apply(lambda x: list(self.seg.cut(x, mode='pos', is_rough=True)))
+
+        result['question_cut'] = result['question_cut'].apply(lambda x: list(zip(x[0], x[1])))
+
+        result['question_cut'] = result['question_cut'].apply(lambda x: [i[0] for i in x if i[1] in ['n', 'nz', 'v', 'vn', 'nw']])
+
+        result = flatten(result['question_cut'].apply(lambda x: [y for y in x if y not in self.stopwords]).tolist())
+
+        result = [x for x in list(set(result)) if len(x) > 1]
+        result += entity_word
+        with open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt'), 'w') as f:
+            for i in result:
+                f.write(i + '\n')
+        return result
+
     def load_data(self, to_file):
+        """
+        1. Load the data from the file, and then randomly select 1% of the data as the training data.
+        2. The data is divided into positive and negative samples.
+        3. The positive sample is the data in the mongo database, and the negative sample is the data in
+        the file.
+        4. The data is randomly shuffled and saved to the file
+        
+        :param to_file: the name of the file to be saved
+        """
         base_path = os.path.join(self.cfg.BASE.DATA_PATH,
                                  'intent/clean_chat_corpus')
         intent_file = os.listdir(base_path)
@@ -141,18 +160,21 @@ class Fasttext(object):
                                    header=None)
 
     def train(self, file_name):
+        """
+        The function takes in a file name, checks if the file exists, if it does, it loads the data,
+        then it trains the classifier, saves the model, and prints the result
+        
+        :param file_name: The name of the file to be trained
+        """
         if '.' not in file_name:
-            file_name = '{}.csv'.format(file_name)
+            file_name = f'{file_name}.csv'
         file_path = os.path.join(self.cfg.INTENT.DATA_PATH, file_name)
         if os.path.exists(file_path):
             self.load_data(file_name)
-        self.classifier = fasttext.train_supervised(file_path,
-                                                    label='__lable__',
-                                                    dim=200,
-                                                    epoch=20)
-        self.classifier.save_model(
-            os.path.join(self.cfg.INTENT.MODEL_PATH,
-                         file_name.replace('csv', 'bin')))
+        self.classifier = fasttext.train_supervised(file_path, label='__lable__', dim=200, epoch=20)
+
+        self.classifier.save_model(os.path.join(self.cfg.INTENT.MODEL_PATH, file_name.replace('csv', 'bin')))
+
         result = self.classifier.test(file_path)
         print("result:", result)
         # print("P@1:", result.precision)  #准确率
@@ -160,12 +182,29 @@ class Fasttext(object):
         # print("Number of examples:", result.nexamples)  #预测错的例子
 
     def predict(self, text):
+        """
+        1. If the input text is empty, return "chitchat" and 1.0.
+        2. If the input text is sensetive, return "sensetive" and 1.0.
+        3. If the input text is a question, return "pet_qa" and 1.0.
+        4. If the input text is nonsence, return "chitchat" and 1.0.
+        5. If the input text is not empty, return the result of the classifier
+        
+        :param text: the text to be classified
+        """
+
+        if not text:
+            return "chitchat", 1.0
         flag, sen = self.sensetive_detect(text)
         if flag:
             return 'sensetive', 1.0
+        
         res = self.ah.search(text)
         if res:
             return "pet_qa", 1.0
+
+        flag = nonsence_detect(text)
+        if flag:
+            return "chitchat", 1.0
         text = " ".join(
             [x for x in self.seg.cut(text) if x not in self.stopwords])
         if not text:
@@ -180,7 +219,8 @@ if __name__ == '__main__':
 
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
-        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种', '习大大', '犬细小病毒的症状', '牙菌斑'
+        '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种', '习大大', '犬细小病毒的症状', '牙菌斑',
+        u'\U0001F947', u':goldmedaille:', ':/::B'
     ]
 
     for x in text:

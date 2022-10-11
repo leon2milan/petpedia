@@ -9,7 +9,7 @@ from qa.tools.utils import flatten
 from qa.retrieval.manual.manual import Manual
 
 from joblib import Parallel, delayed
-import dill 
+import dill
 
 logger = setup_logger()
 __all__ = ['BasicSearch']
@@ -20,9 +20,7 @@ def unwrap_self(arg, **kwarg):
 
 
 class BasicSearch():
-    __slot__ = [
-        'cfg', 'sim', 'tr', 'rough_hnsw', 'fine_hnsw', 'rules'
-    ]
+    __slot__ = ['cfg', 'sim', 'tr', 'rough_hnsw', 'fine_hnsw', 'rules']
 
     def __init__(self, cfg):
         logger.debug('Initializing Basic Search Object ....')
@@ -293,11 +291,9 @@ class BasicSearch():
     def search_helper(self, query):
         if not query.get('rough_query') and not query.get('fine_query'):
             result = []
-        
-        logger.debug(
-            "query 检索原语: {}, rough cut 后 {}, fine cut 后 {}".format(
-                query['query'], query.get('rough_query'),
-                query.get('fine_query')))
+
+        logger.debug("query 检索原语: {}, rough cut 后 {}, fine cut 后 {}".format(
+            query['query'], query.get('rough_query'), query.get('fine_query')))
         s = time.time()
         if query["type"] == "BEST_MATCH":
             tmp = []
@@ -343,8 +339,10 @@ class BasicSearch():
 
         if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
             logger.info('PART_MATCH takes: {}'.format(time.time() - s))
-        return {'type': query['type'], 
-                'result': self.__keywords_filter(result, query["filter"])}
+        return {
+            'type': query['type'],
+            'result': self.__keywords_filter(result, query["filter"])
+        }
 
     def search2(self, seek_query_list):
         if seek_query_list == []:
@@ -356,8 +354,10 @@ class BasicSearch():
         result["PART_MATCH"] = []
         notresult = []
 
-        results = Parallel(n_jobs=2, backend='threading')(
-            delayed(unwrap_self)((self, query)) for query in seek_query_list)
+        results = Parallel(n_jobs=2,
+                           backend='threading')(delayed(unwrap_self)((self,
+                                                                      query))
+                                                for query in seek_query_list)
         for res in results:
             if res['type'] == 'BEST_MATCH':
                 result["BEST_MATCH"] += res['result']
@@ -530,6 +530,13 @@ class BasicSearch():
             if x['type'] == 'BEST_MATCH'
         ][0], result)
 
+        for i in range(len(result)):
+            if [
+                    x['query'] for x in seek_query_list
+                    if x['type'] == 'BEST_MATCH'
+            ][0] in result[i]['doc']['question']:
+                result[i]['score'] += 1
+
         if self.cfg.RETRIEVAL.TIME_PERFORMENCE:
             logger.info('Cal simlarity takes: {}'.format(time.time() - s))
 
@@ -558,7 +565,6 @@ class BasicSearch():
         logger.debug('Get score takes: {}'.format(time.time() - s))
         for i in range(len(result)):
             score = scores[i]
-
             result[i]['score'] = score
         return result
 

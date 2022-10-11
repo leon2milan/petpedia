@@ -364,18 +364,18 @@ if __name__ == '__main__':
     if os.path.exists(cfg.DICTIONARY.CUSTOM_WORDS):
         old = pd.read_csv(os.path.join(cfg.DICTIONARY.CUSTOM_WORDS))
         new = pd.concat([new, old]).drop_duplicates().reset_index(drop=True)
-    word = copy.deepcopy(new).dropna()
-    print('word', word.shape, new.shape)
+    word = copy.deepcopy(new)
     from functools import reduce
     entity_word = flatten([[k, v]
                            for k, v in reduce(lambda a, b: dict(a, **b),
                                               specialize.values()).items()])
 
     word['word'] = word['word'].apply(
-        lambda x: trans2simple(x)).dropna()
+        lambda x: trans2simple(str(x))).dropna()
     word['word'] = word['word'].apply(
         lambda x: re.sub('\（.*\）', '', x))
-    word = word.drop_duplicates().dropna()
+    word = word.drop_duplicates()
+
     word['cut'] = word['word'].apply(
         lambda x: list(seg.cut(x, mode='pos')))
     word['len'] = word['cut'].apply(lambda x: len(x[0]))
@@ -402,7 +402,9 @@ if __name__ == '__main__':
         '着身子', '没法正常', '期过后', '喵想', '座最适合养', '城小区', '大便软', '天中午', '将会增加',
         '层毛发', '得到处都是', '飞机耳', '骨骨折', '齿龈红', '凯恩更', '喵糖', '毯子或者', '钱买', '天之内',
         '分成两', '中加入', '中含有一种', '中含有', '中还含有', '中获得', '左右即可', '期间不建议', '中富含',
-        '中可能含有', '中含有大量', '中含有一种', '中含有多种', '中都含有'
+        '中可能含有', '中含有大量', '中含有一种', '中含有多种', '中都含有', '鼻子干', '雌性王', '雌性友', 
+        '雌性主人', '逐渐变', '还挺', '超过10', '超过2', '超过5', '约2', '实在太', '完之后','后再', '后再进行',
+        '不要太', '不能太', '不算太', '不必太', '不宜太', '不应该太'
     ]
     word = word[~word['word'].isin(exclude)]
 
