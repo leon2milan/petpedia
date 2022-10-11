@@ -76,12 +76,13 @@ class Fasttext(object):
         """
         self.ah = Ahocorasick()
         if os.path.exists(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')):
-            qa = [x.strip() for x in open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')).readlines() if x.strip() not in self.exclusive]
+            qa = [x.strip() for x in open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')).readlines()]
 
         else:
             qa = self._extracted_from_build_detector_13()
         for word in qa:
-            self.ah.add_word(word)
+            if word not in self.exclusive:
+                self.ah.add_word(word)
         self.ah.make()
 
     # TODO Rename this here and in `build_detector`
