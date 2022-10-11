@@ -22,7 +22,7 @@ __all__ = ['Fasttext']
 # The class takes in a text, and returns the intent and the probability of the text
 class Fasttext(object):
     __slot__ = [
-        'cfg', 'mongo', 'seg', 'stopwords', 'specialize', 'classifier', 'ah'
+        'cfg', 'mongo', 'seg', 'stopwords', 'specialize', 'classifier', 'ah', 'exclusive'
     ]
 
     def __init__(self, cfg, model=None):
@@ -32,6 +32,8 @@ class Fasttext(object):
         self.stopwords = Words(self.cfg).get_stopwords
         self.specialize = Words(cfg).get_specializewords
         model = model if model and model is not None else 'intent'
+
+        self.exclusive = ['发货', '不能', '失败', '没有', '能用']
         self.build_detector()
         self.build_sensetive_detector()
         if model is None or not os.path.exists(os.path.join(self.cfg.INTENT.MODEL_PATH, f'{model}.bin')):
@@ -74,7 +76,7 @@ class Fasttext(object):
         """
         self.ah = Ahocorasick()
         if os.path.exists(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')):
-            qa = [x.strip() for x in open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')).readlines()]
+            qa = [x.strip() for x in open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt')).readlines() if x.strip() not in self.exclusive]
 
         else:
             qa = self._extracted_from_build_detector_13()
@@ -88,18 +90,16 @@ class Fasttext(object):
 
         result = pd.DataFrame(list(self.mongo.find(self.cfg.BASE.QA_COLLECTION, {})))
         result['question_cut'] = result['question'].apply(lambda x: list(self.seg.cut(x, mode='pos', is_rough=True)))
-
         result['question_cut'] = result['question_cut'].apply(lambda x: list(zip(x[0], x[1])))
-
         result['question_cut'] = result['question_cut'].apply(lambda x: [i[0] for i in x if i[1] in ['n', 'nz', 'v', 'vn', 'nw']])
-
         result = flatten(result['question_cut'].apply(lambda x: [y for y in x if y not in self.stopwords]).tolist())
-
         result = [x for x in list(set(result)) if len(x) > 1]
+        # result = []
         result += entity_word
         with open(os.path.join(self.cfg.INTENT.MODEL_PATH, 'detector.txt'), 'w') as f:
             for i in result:
-                f.write(i + '\n')
+                if i not in self.exclusive:
+                    f.write(i + '\n')
         return result
 
     def load_data(self, to_file):
@@ -220,7 +220,8 @@ if __name__ == '__main__':
     text = [
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
         '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种', '习大大', '犬细小病毒的症状', '牙菌斑',
-        u'\U0001F947', u':goldmedaille:', ':/::B'
+        u'\U0001F947', u':goldmedaille:', ':/::B', "猫", "狗", "我的订单没有发货", "商城优惠券不能用", "预约挂号失败",
+        '€??x榐鹛)'
     ]
 
     for x in text:
