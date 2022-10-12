@@ -33,4 +33,7 @@ pytest-timeout
 toml
 pymc3
 openpyxl
+xlrd==1.2.0
+zhon
+xgboost
 # ddparser too slow
