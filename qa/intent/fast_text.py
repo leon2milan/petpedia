@@ -33,7 +33,10 @@ class Fasttext(object):
         self.specialize = Words(cfg).get_specializewords
         model = model if model and model is not None else 'intent'
 
-        self.exclusive = ['发货', '不能', '失败', '没有', '能用']
+        self.exclusive = [
+            '发货', '不能', '失败', '没有', '能用', '收到', '礼品', '电话', '服务', '人工',
+            ''
+        ]
         self.build_detector()
         self.build_sensetive_detector()
         if model is None or not os.path.exists(os.path.join(self.cfg.INTENT.MODEL_PATH, f'{model}.bin')):
@@ -222,7 +225,7 @@ if __name__ == '__main__':
         "拉布拉多不吃东西怎么办", "请问是否可以帮忙鉴别品种", "金毛犬如何鉴定", "发烧", "拉肚子", "感冒", '掉毛',
         '我和的', '阿提桑诺曼底短腿犬', '胰腺炎', 'hello', '金毛相似品种', '习大大', '犬细小病毒的症状', '牙菌斑',
         u'\U0001F947', u':goldmedaille:', ':/::B', "猫", "狗", "我的订单没有发货", "商城优惠券不能用", "预约挂号失败",
-        '€??x榐鹛)'
+        '€??x榐鹛)', '狗狗3个月吃什么', '抽奖中奖后没有收到券和礼品', u"\u0001a"
     ]
 
     for x in text:
